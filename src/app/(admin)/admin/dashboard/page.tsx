@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
-import { FiUsers, FiFilm, FiMessageSquare, FiClock, FiDollarSign, FiStar } from "react-icons/fi";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  FiUsers,
+  FiFilm,
+  FiMessageSquare,
+  FiClock,
+  FiDollarSign,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiCalendar,
+} from "react-icons/fi";
+import { Card, CardContent } from "@/components/ui/card";
 import type { ApiResponse, DashboardStats } from "@/types";
+import { DashboardCharts } from "./dashboard-charts";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
@@ -20,102 +29,124 @@ async function getStats(): Promise<DashboardStats | null> {
   }
 }
 
-export default async function AdminDashboard() {
-  const stats = await getStats();
+function formatDateRange() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 6);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${fmt(start).replace(/,\s*\d{4}$/, "")} – ${fmt(end)}`;
+}
 
-  const statCards = [
-    { label: "Total Users", value: stats?.stats.totalUsers ?? 0, icon: FiUsers, color: "text-blue-400" },
-    { label: "Total Media", value: stats?.stats.totalMedia ?? 0, icon: FiFilm, color: "text-purple-400" },
-    { label: "Total Reviews", value: stats?.stats.totalReviews ?? 0, icon: FiMessageSquare, color: "text-green-400" },
-    { label: "Pending Reviews", value: stats?.stats.pendingReviews ?? 0, icon: FiClock, color: "text-amber-400" },
-    { label: "Active Subscriptions", value: stats?.stats.activeSubscriptions ?? 0, icon: FiDollarSign, color: "text-emerald-400" },
-  ];
+const statCards = [
+  {
+    key: "totalUsers" as const,
+    label: "Total Users",
+    icon: FiUsers,
+    iconColor: "text-blue-400",
+    iconBg: "bg-blue-400/10",
+    trend: "+12.5%",
+    positive: true,
+  },
+  {
+    key: "totalMedia" as const,
+    label: "Total Media",
+    icon: FiFilm,
+    iconColor: "text-purple-400",
+    iconBg: "bg-purple-400/10",
+    trend: "+8.4%",
+    positive: true,
+  },
+  {
+    key: "totalReviews" as const,
+    label: "Total Reviews",
+    icon: FiMessageSquare,
+    iconColor: "text-green-400",
+    iconBg: "bg-green-400/10",
+    trend: "+15.3%",
+    positive: true,
+  },
+  {
+    key: "pendingReviews" as const,
+    label: "Pending Reviews",
+    icon: FiClock,
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-400/10",
+    trend: "-11.1%",
+    positive: false,
+  },
+  {
+    key: "activeSubscriptions" as const,
+    label: "Active Subscriptions",
+    icon: FiDollarSign,
+    iconColor: "text-emerald-400",
+    iconBg: "bg-emerald-400/10",
+    trend: "+9.7%",
+    positive: true,
+  },
+] as const;
+
+const emptyStats: DashboardStats = {
+  stats: {
+    totalUsers: 0,
+    totalMedia: 0,
+    totalReviews: 0,
+    pendingReviews: 0,
+    activeSubscriptions: 0,
+  },
+  recentReviews: [],
+  topRatedMedia: [],
+};
+
+export default async function AdminDashboard() {
+  const stats = (await getStats()) ?? emptyStats;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Platform overview and recent activity</p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Welcome back! Here&apos;s what&apos;s happening with your platform.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 border border-border/40 rounded-lg px-3 py-2 shrink-0">
+          <FiCalendar className="w-4 h-4 text-primary shrink-0" />
+          <span>{formatDateRange()}</span>
+        </div>
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {statCards.map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="border-border/50">
-            <CardContent className="pt-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{value.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+        {statCards.map(({ key, label, icon: Icon, iconColor, iconBg, trend, positive }) => (
+          <Card key={key} className="border-border/50">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className={`p-2 rounded-lg ${iconBg}`}>
+                  <Icon className={`w-5 h-5 ${iconColor}`} />
                 </div>
-                <Icon className={`w-5 h-5 ${color}`} />
+                <div
+                  className={`flex items-center gap-0.5 text-xs font-medium ${
+                    positive ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {positive ? (
+                    <FiTrendingUp className="w-3 h-3" />
+                  ) : (
+                    <FiTrendingDown className="w-3 h-3" />
+                  )}
+                  {trend}
+                </div>
               </div>
+              <p className="text-2xl font-bold leading-none">
+                {stats.stats[key].toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent reviews */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Recent Reviews</h2>
-              <a href="/admin/reviews" className="text-xs text-primary hover:underline">View all</a>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {stats?.recentReviews.length ? (
-              stats.recentReviews.map((review) => (
-                <div key={review.id} className="flex items-start justify-between gap-3 py-2 border-b border-border/30 last:border-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{review.user.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{review.media?.title}</p>
-                    <p className="text-xs text-foreground/70 line-clamp-1 mt-0.5">{review.content}</p>
-                  </div>
-                  <Badge
-                    variant={review.status === "APPROVED" ? "default" : review.status === "PENDING" ? "secondary" : "destructive"}
-                    className="text-xs shrink-0"
-                  >
-                    {review.status}
-                  </Badge>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No reviews yet</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top rated media */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Top Rated Media</h2>
-              <a href="/admin/movies" className="text-xs text-primary hover:underline">View all</a>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {stats?.topRatedMedia.length ? (
-              stats.topRatedMedia.map((media, i) => (
-                <div key={media.id} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-                  <span className="text-sm font-bold text-muted-foreground w-5 shrink-0">#{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{media.title}</p>
-                    <p className="text-xs text-muted-foreground">{media._count.reviews} reviews</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <FiStar className="w-3 h-3 text-primary" />
-                    <span className="text-sm font-bold">{media.averageRating.toFixed(1)}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No media yet</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardCharts stats={stats} />
     </div>
   );
 }

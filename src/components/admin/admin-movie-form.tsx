@@ -4,7 +4,18 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FiArrowLeft, FiGlobe, FiEye, FiEyeOff } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiGlobe,
+  FiEye,
+  FiEyeOff,
+  FiInfo,
+  FiLoader,
+  FiFilm,
+  FiUsers,
+  FiMonitor,
+  FiLink,
+} from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,23 +114,37 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
   const posterUrlValue = watch("posterUrl");
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+    <div className="max-w-3xl space-y-8">
+
+      {/* ── Header ── */}
+      <div className="flex items-start gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCancel}
+          className="mt-0.5 shrink-0"
+        >
           <FiArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{isEdit ? "Edit" : "Add"} Media</h1>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isEdit ? "Edit Media" : "Add New Media"}
+            </h1>
             {isEdit && (
-              <Badge variant={isPublished ? "default" : "secondary"} className="text-xs">
+              <Badge
+                variant={isPublished ? "default" : "secondary"}
+                className="text-xs"
+              >
                 {isPublished ? "Published" : "Unpublished"}
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {isEdit ? `Editing "${movie.title}"` : "Add a new movie or series to the catalog"}
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isEdit
+              ? `Admin / Media / ${movie.title}`
+              : "Admin / Media / New"}
           </p>
         </div>
 
@@ -129,128 +154,213 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
             type="button"
             variant={isPublished ? "outline" : "default"}
             size="sm"
-            className="gap-2 shrink-0"
+            className="gap-2 shrink-0 mt-0.5"
             onClick={() => setIsPublished(!isPublished)}
           >
             {isPublished ? (
-              <><FiEyeOff className="w-3.5 h-3.5" /> Unpublish</>
+              <>
+                <FiEyeOff className="w-3.5 h-3.5" />
+                Unpublish
+              </>
             ) : (
-              <><FiEye className="w-3.5 h-3.5" /> Publish</>
+              <>
+                <FiEye className="w-3.5 h-3.5" />
+                Publish
+              </>
             )}
           </Button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ── Form ── */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
 
-          {/* Title */}
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Title <span className="text-destructive">*</span></Label>
+        {/* ── Section 1: Basic Information ── */}
+        <div className="space-y-5">
+          <SectionDivider label="Basic Information" />
+
+          {/* Title — full width */}
+          <div className="space-y-1.5">
+            <Label>
+              Title <span className="text-destructive">*</span>
+            </Label>
             <Input placeholder="e.g., Inception" {...register("title")} />
-            {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+            {errors.title && (
+              <p className="text-xs text-destructive">{errors.title.message}</p>
+            )}
           </div>
 
-          {/* Type */}
-          <div className="space-y-1.5">
-            <Label>Type <span className="text-destructive">*</span></Label>
-            <Select
-              value={watch("type")}
-              onValueChange={(v) => v && setValue("type", v as "MOVIE" | "SERIES")}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MOVIE">Movie</SelectItem>
-                <SelectItem value="SERIES">Series</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Type | Pricing | Release Year */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>
+                Type <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={watch("type")}
+                onValueChange={(v) => v && setValue("type", v as "MOVIE" | "SERIES")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MOVIE">Movie</SelectItem>
+                  <SelectItem value="SERIES">Series</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Pricing */}
-          <div className="space-y-1.5">
-            <Label>Pricing <span className="text-destructive">*</span></Label>
-            <Select
-              value={watch("pricing")}
-              onValueChange={(v) => v && setValue("pricing", v as "free" | "premium")}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-1.5">
+              <Label>
+                Pricing <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={watch("pricing")}
+                onValueChange={(v) => v && setValue("pricing", v as "free" | "premium")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Release Year */}
-          <div className="space-y-1.5">
-            <Label>Release Year <span className="text-destructive">*</span></Label>
-            <Input
-              type="number"
-              min={1888}
-              max={new Date().getFullYear() + 2}
-              {...register("releaseYear", { valueAsNumber: true })}
-            />
-            {errors.releaseYear && <p className="text-xs text-destructive">{errors.releaseYear.message}</p>}
+            <div className="space-y-1.5">
+              <Label>
+                Release Year <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="number"
+                min={1888}
+                max={new Date().getFullYear() + 2}
+                {...register("releaseYear", { valueAsNumber: true })}
+              />
+              {errors.releaseYear && (
+                <p className="text-xs text-destructive">{errors.releaseYear.message}</p>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* ── Section 2: Details ── */}
+        <div className="space-y-5">
+          <SectionDivider label="Details" />
 
           {/* Director */}
-          <div className="space-y-1.5">
-            <Label>Director <span className="text-destructive">*</span></Label>
-            <Input placeholder="Christopher Nolan" {...register("director")} />
-            {errors.director && <p className="text-xs text-destructive">{errors.director.message}</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>
+                Director <span className="text-destructive">*</span>
+              </Label>
+              <Input placeholder="Christopher Nolan" {...register("director")} />
+              {errors.director && (
+                <p className="text-xs text-destructive">{errors.director.message}</p>
+              )}
+            </div>
           </div>
 
-          {/* Synopsis */}
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Synopsis <span className="text-destructive">*</span></Label>
+          {/* Synopsis — full width */}
+          <div className="space-y-1.5">
+            <Label>
+              Synopsis <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               rows={4}
               placeholder="Brief description of the plot..."
               {...register("synopsis")}
             />
-            {errors.synopsis && <p className="text-xs text-destructive">{errors.synopsis.message}</p>}
+            {errors.synopsis && (
+              <p className="text-xs text-destructive">{errors.synopsis.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Section 3: Classification ── */}
+        <div className="space-y-5">
+          <SectionDivider label="Classification" />
+
+          {/* Genres | Cast */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <FiFilm className="w-3.5 h-3.5 text-muted-foreground" />
+                Genres <span className="text-destructive">*</span>
+              </Label>
+              <Input placeholder="Action, Sci-Fi, Thriller" {...register("genre")} />
+              {errors.genre ? (
+                <p className="text-xs text-destructive">{errors.genre.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Separate multiple values with commas
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <FiUsers className="w-3.5 h-3.5 text-muted-foreground" />
+                Cast <span className="text-destructive">*</span>
+              </Label>
+              <Input placeholder="Leonardo DiCaprio, Tom Hardy" {...register("cast")} />
+              {errors.cast ? (
+                <p className="text-xs text-destructive">{errors.cast.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Separate multiple values with commas
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Genres */}
+          {/* Streaming Platforms — full width */}
           <div className="space-y-1.5">
-            <Label>
-              Genres <span className="text-destructive">*</span>{" "}
-              <span className="text-xs text-muted-foreground font-normal">(comma separated)</span>
-            </Label>
-            <Input placeholder="Action, Sci-Fi, Thriller" {...register("genre")} />
-            {errors.genre && <p className="text-xs text-destructive">{errors.genre.message}</p>}
-          </div>
-
-          {/* Cast */}
-          <div className="space-y-1.5">
-            <Label>
-              Cast <span className="text-destructive">*</span>{" "}
-              <span className="text-xs text-muted-foreground font-normal">(comma separated)</span>
-            </Label>
-            <Input placeholder="Leonardo DiCaprio, Tom Hardy" {...register("cast")} />
-            {errors.cast && <p className="text-xs text-destructive">{errors.cast.message}</p>}
-          </div>
-
-          {/* Streaming Platforms */}
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>
-              Streaming Platforms <span className="text-destructive">*</span>{" "}
-              <span className="text-xs text-muted-foreground font-normal">(comma separated)</span>
-            </Label>
-            <Input placeholder="Netflix, Prime Video, Disney+" {...register("streamingPlatforms")} />
-            {errors.streamingPlatforms && <p className="text-xs text-destructive">{errors.streamingPlatforms.message}</p>}
-          </div>
-
-          {/* Poster URL */}
-          <div className="sm:col-span-2 space-y-1.5">
             <Label className="flex items-center gap-1.5">
-              <FiGlobe className="w-3.5 h-3.5" /> Poster URL
-              <span className="text-xs text-muted-foreground font-normal ml-1">(TMDB, IMDB, or direct image link)</span>
+              <FiMonitor className="w-3.5 h-3.5 text-muted-foreground" />
+              Streaming Platforms <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              placeholder="Netflix, Prime Video, Disney+"
+              {...register("streamingPlatforms")}
+            />
+            {errors.streamingPlatforms ? (
+              <p className="text-xs text-destructive">
+                {errors.streamingPlatforms.message}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Separate multiple values with commas
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Section 4: Media Links ── */}
+        <div className="space-y-5">
+          <SectionDivider label="Media Links" />
+
+          {/* Poster URL — full width with inline preview */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <FiGlobe className="w-3.5 h-3.5 text-muted-foreground" />
+              Poster URL
+              <span className="text-xs text-muted-foreground font-normal ml-1">
+                (TMDB, IMDB, or direct image link)
+              </span>
             </Label>
             <div className="flex gap-3 items-start">
               <div className="flex-1">
-                <Input placeholder="https://image.tmdb.org/t/p/w500/..." {...register("posterUrl")} />
-                {errors.posterUrl && <p className="text-xs text-destructive mt-1">{errors.posterUrl.message}</p>}
+                <Input
+                  placeholder="https://image.tmdb.org/t/p/w500/..."
+                  {...register("posterUrl")}
+                />
+                {errors.posterUrl && (
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.posterUrl.message}
+                  </p>
+                )}
               </div>
               {posterUrlValue && !errors.posterUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -258,44 +368,93 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
                   src={posterUrlValue}
                   alt="Poster preview"
                   className="w-14 h-20 object-cover rounded-md border border-border/50 shrink-0"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
                 />
               )}
             </div>
           </div>
 
-          {/* Trailer URL */}
-          <div className="space-y-1.5">
-            <Label>Trailer URL <span className="text-xs text-muted-foreground font-normal">(YouTube)</span></Label>
-            <Input placeholder="https://youtube.com/watch?v=..." {...register("trailerUrl")} />
-            {errors.trailerUrl && <p className="text-xs text-destructive">{errors.trailerUrl.message}</p>}
-          </div>
+          {/* Trailer URL | Streaming URL */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <FiLink className="w-3.5 h-3.5 text-muted-foreground" />
+                Trailer URL{" "}
+                <span className="text-xs text-muted-foreground font-normal">
+                  (YouTube)
+                </span>
+              </Label>
+              <Input
+                placeholder="https://youtube.com/watch?v=..."
+                {...register("trailerUrl")}
+              />
+              {errors.trailerUrl && (
+                <p className="text-xs text-destructive">{errors.trailerUrl.message}</p>
+              )}
+            </div>
 
-          {/* Streaming URL */}
-          <div className="space-y-1.5">
-            <Label>Streaming URL <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
-            <Input placeholder="https://..." {...register("streamingUrl")} />
-            {errors.streamingUrl && <p className="text-xs text-destructive">{errors.streamingUrl.message}</p>}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <FiLink className="w-3.5 h-3.5 text-muted-foreground" />
+                Streaming URL{" "}
+                <span className="text-xs text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <Input placeholder="https://..." {...register("streamingUrl")} />
+              {errors.streamingUrl && (
+                <p className="text-xs text-destructive">{errors.streamingUrl.message}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* New movie publish note */}
+        {/* New media publish note */}
         {!isEdit && (
-          <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-            New media is saved as <strong>Unpublished</strong> by default. Use the Publish button after creation to make it visible to users.
-          </p>
+          <div className="flex items-start gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+            <FiInfo className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              New media is saved as{" "}
+              <strong className="text-foreground">Unpublished</strong> by default.
+              Use the Publish button after creation to make it visible to users.
+            </p>
+          </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Media"}
+        {/* ── Actions ── */}
+        <div className="flex items-center gap-3 pt-2 border-t border-border/40">
+          <Button type="submit" disabled={loading} className="gap-2">
+            {loading ? (
+              <>
+                <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                Saving...
+              </>
+            ) : isEdit ? (
+              "Save Changes"
+            ) : (
+              "Create Media"
+            )}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ── Section divider helper ── */
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="h-px flex-1 bg-border/40" />
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-2">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border/40" />
     </div>
   );
 }

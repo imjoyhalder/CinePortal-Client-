@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReviewCard from "@/components/reviews/review-card";
+import EditReviewDialog from "@/components/reviews/edit-review-dialog";
 import CheckoutButton from "@/components/payment/checkout-button";
 import { useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
@@ -28,6 +29,7 @@ export default function ProfilePage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
 
   useEffect(() => {
     if (!isPending && !session) { router.push("/sign-in"); return; }
@@ -145,7 +147,15 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviews.map((r) => <ReviewCard key={r.id} review={r} showMedia />)}
+              {reviews.map((r) => (
+                <ReviewCard
+                  key={r.id}
+                  review={r}
+                  showMedia
+                  onDeleted={() => setReviews((prev) => prev.filter((x) => x.id !== r.id))}
+                  onEdit={() => setEditingReview(r)}
+                />
+              ))}
             </div>
           )}
         </TabsContent>
@@ -267,6 +277,12 @@ export default function ProfilePage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <EditReviewDialog
+        review={editingReview}
+        onClose={() => setEditingReview(null)}
+        onSaved={(updated) => setReviews((prev) => prev.map((r) => r.id === updated.id ? updated : r))}
+      />
     </div>
   );
 }

@@ -14,7 +14,7 @@ interface CommentsSectionProps {
   reviewId: string;
 }
 
-function CommentItem({ comment, reviewId, onReply }: { comment: Comment; reviewId: string; onReply: (id: string) => void }) {
+function CommentItem({ comment, onReply, currentUserId, onDelete }: { comment: Comment; reviewId: string; onReply: (id: string) => void; currentUserId?: string; onDelete?: () => void }) {
   return (
     <div className="space-y-2">
       <div className="flex items-start gap-2.5">
@@ -37,6 +37,14 @@ function CommentItem({ comment, reviewId, onReply }: { comment: Comment; reviewI
             >
               Reply
             </button>
+            {currentUserId && currentUserId === comment.user.id && onDelete && (
+              <button
+                className="text-[11px] text-destructive/70 hover:text-destructive transition-colors"
+                onClick={onDelete}
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -89,6 +97,16 @@ export default function CommentsSection({ reviewId }: CommentsSectionProps) {
     }
   }
 
+  async function handleDeleteComment(commentId: string) {
+    try {
+      await api.delete(`/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success("Comment deleted");
+    } catch {
+      toast.error("Failed to delete comment");
+    }
+  }
+
   async function handleSubmit() {
     if (!content.trim()) return;
     setSubmitting(true);
@@ -132,6 +150,8 @@ export default function CommentsSection({ reviewId }: CommentsSectionProps) {
                   comment={comment}
                   reviewId={reviewId}
                   onReply={(id) => { setReplyTo(id); setShowForm(true); }}
+                  currentUserId={session?.user.id}
+                  onDelete={() => handleDeleteComment(comment.id)}
                 />
               ))}
             </div>
