@@ -34,11 +34,15 @@ export default function CheckoutButton({
 
     setLoading(true);
     try {
-      const data = await api.post<{ sessionId: string; url: string }>(
+      const resp = await api.post<{ success: boolean; data: { sessionId: string; url: string } }>(
         "/payments/checkout",
         { plan }
       );
-      window.location.href = data.url;
+      if (resp.data?.url) {
+        window.location.href = resp.data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to start checkout");
       setLoading(false);

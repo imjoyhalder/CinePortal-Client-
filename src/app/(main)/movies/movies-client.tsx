@@ -66,6 +66,19 @@ export default function MoviesClient() {
     return () => { cancelled = true; };
   }, [buildQuery]);
 
+  // Sync filter state → URL so links are shareable and back button works
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (type) params.set("type", type);
+    if (genre) params.set("genre", genre);
+    if (platform) params.set("streamingPlatform", platform);
+    if (pricing) params.set("pricing", pricing);
+    if (sortBy) params.set("sortBy", sortBy);
+    if (page > 1) params.set("page", String(page));
+    router.replace(`/movies${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
+  }, [search, type, genre, platform, pricing, sortBy, page, router]);
+
   function clearFilters() {
     setSearch(""); setType(""); setGenre(""); setPlatform(""); setPricing(""); setSortBy(""); setPage(1);
   }

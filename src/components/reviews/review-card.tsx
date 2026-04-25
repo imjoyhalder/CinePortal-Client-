@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FiThumbsUp, FiMessageSquare, FiAlertTriangle } from "react-icons/fi";
+import { FiThumbsUp, FiAlertTriangle, FiEdit2, FiTrash2 } from "react-icons/fi";
+import CommentsSection from "./comments-section";
 import { AiFillStar } from "react-icons/ai";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +17,30 @@ import type { Review } from "@/types";
 interface ReviewCardProps {
   review: Review;
   showMedia?: boolean;
+  onDeleted?: () => void;
+  onEdit?: () => void;
 }
 
-export default function ReviewCard({ review, showMedia = false }: ReviewCardProps) {
+export default function ReviewCard({ review, showMedia = false, onDeleted, onEdit }: ReviewCardProps) {
   const { data: session } = useSession();
   const [likes, setLikes] = useState(review._count.likes);
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm("Delete this review? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/reviews/${review.id}`);
+      toast.success("Review deleted");
+      onDeleted?.();
+    } catch {
+      toast.error("Failed to delete review");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleLike() {
     if (!session) {
@@ -105,7 +123,7 @@ export default function ReviewCard({ review, showMedia = false }: ReviewCardProp
           </div>
         )}
 
-        <div className="flex items-center gap-4 pt-1">
+        <div className="flex items-center justify-between pt-1">
           <Button
             variant="ghost"
             size="sm"
@@ -116,13 +134,22 @@ export default function ReviewCard({ review, showMedia = false }: ReviewCardProp
             <FiThumbsUp className="w-3.5 h-3.5" />
             {likes}
           </Button>
-          <Link href={`/movies/${review.mediaId}#reviews`}>
-            <Button variant="ghost" size="sm" className="flex items-center gap-1.5 h-8 px-2 text-xs text-muted-foreground">
-              <FiMessageSquare className="w-3.5 h-3.5" />
-              {review._count.comments}
-            </Button>
-          </Link>
+          {(onEdit || onDeleted) && (
+            <div className="flex items-center gap-1">
+              {onEdit && (
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={onEdit}>
+                  <FiEdit2 className="w-3 h-3" /> Edit
+                </Button>
+              )}
+              {onDeleted && (
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
+                  <FiTrash2 className="w-3 h-3" /> {deleting ? "…" : "Delete"}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+        <CommentsSection reviewId={review.id} />
       </CardContent>
     </Card>
   );
