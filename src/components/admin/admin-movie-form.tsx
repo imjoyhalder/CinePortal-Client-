@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,8 @@ import {
   FiUsers,
   FiMonitor,
   FiLink,
+  FiUploadCloud,
+  FiX,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,11 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { Media } from "@/types";
 
+const urlOrEmpty = z
+  .string()
+  .refine((v) => !v || /^https?:\/\/.+/.test(v), { message: "Must be a valid URL" })
+  .optional();
+
 const schema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   synopsis: z.string().min(10, "Synopsis must be at least 10 characters"),
@@ -37,9 +44,9 @@ const schema = z.object({
   director: z.string().min(1, "Director is required"),
   cast: z.string().min(1, "At least one cast member required"),
   streamingPlatforms: z.string().min(1, "At least one platform required"),
-  posterUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  trailerUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  streamingUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  posterUrl: urlOrEmpty,
+  trailerUrl: urlOrEmpty,
+  streamingUrl: urlOrEmpty,
   pricing: z.enum(["free", "premium"]),
 });
 
@@ -53,7 +60,9 @@ interface Props {
 
 export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [isPublished, setIsPublished] = useState(movie?.isPublished ?? false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEdit = !!movie;
 
   const {
@@ -108,6 +117,34 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("/api/proxy/upload/image", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message ?? "Upload failed");
+      setValue("posterUrl", json.data.url, { shouldValidate: true });
+      toast.success("Poster uploaded successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -341,38 +378,75 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
         <div className="space-y-5">
           <SectionDivider label="Media Links" />
 
-          {/* Poster URL — full width with inline preview */}
+          {/* Poster — upload or URL */}
           <div className="space-y-1.5">
             <Label className="flex items-center gap-1.5">
               <FiGlobe className="w-3.5 h-3.5 text-muted-foreground" />
-              Poster URL
-              <span className="text-xs text-muted-foreground font-normal ml-1">
-                (TMDB, IMDB, or direct image link)
-              </span>
+              Poster Image
             </Label>
+
             <div className="flex gap-3 items-start">
-              <div className="flex-1">
+              {/* Preview */}
+              <div className="shrink-0">
+                {posterUrlValue ? (
+                  <div className="relative w-14 h-20">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={posterUrlValue}
+                      alt="Poster preview"
+                      className="w-14 h-20 object-cover rounded-md border border-border/50"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setValue("posterUrl", "", { shouldValidate: true })}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 transition-colors"
+                    >
+                      <FiX className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-14 h-20 rounded-md border-2 border-dashed border-border/60 flex items-center justify-center bg-muted/30">
+                    <FiUploadCloud className="w-5 h-5 text-muted-foreground/50" />
+                  </div>
+                )}
+              </div>
+
+              {/* URL input + upload button */}
+              <div className="flex-1 space-y-2">
                 <Input
                   placeholder="https://image.tmdb.org/t/p/w500/..."
                   {...register("posterUrl")}
                 />
                 {errors.posterUrl && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.posterUrl.message}
-                  </p>
+                  <p className="text-xs text-destructive">{errors.posterUrl.message}</p>
                 )}
-              </div>
-              {posterUrlValue && !errors.posterUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={posterUrlValue}
-                  alt="Poster preview"
-                  className="w-14 h-20 object-cover rounded-md border border-border/50 shrink-0"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs h-8"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? (
+                      <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <FiUploadCloud className="w-3.5 h-3.5" />
+                    )}
+                    {uploading ? "Uploading…" : "Upload from device"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">JPEG, PNG, WebP · max 5 MB</span>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
                 />
-              )}
+              </div>
             </div>
           </div>
 
