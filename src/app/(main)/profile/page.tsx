@@ -76,9 +76,25 @@ export default function ProfilePage() {
 
   if (!profile) return null;
 
+  const isAdmin = subscription?.adminAccess === true || profile.role === "ADMIN";
   const plan = subscription?.plan ?? "FREE";
-  const isPaid = plan !== "FREE";
+  const isPaid = plan !== "FREE" && plan !== "ADMIN";
   const isCancelling = subscription?.cancelAtPeriodEnd;
+  const isExpired =
+    !isAdmin &&
+    subscription?.status === "CANCELLED" &&
+    plan === "FREE" &&
+    !!subscription?.currentPeriodStart;
+
+  const daysRemaining =
+    isPaid && subscription?.currentPeriodEnd
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          )
+        )
+      : null;
 
   const planBadgeVariant = isPaid ? "default" : "secondary";
 
@@ -164,115 +180,156 @@ export default function ProfilePage() {
         <TabsContent value="subscription">
           <div className="max-w-lg space-y-4">
 
-            {/* Current plan card */}
-            <Card className="border-border/50">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <FiCreditCard className="w-4 h-4 text-primary" />
-                  <h3 className="font-semibold">Current Plan</h3>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between py-1 border-b border-border/40">
-                  <span className="text-sm text-muted-foreground">Plan</span>
-                  <Badge variant={planBadgeVariant} className="font-semibold">{plan}</Badge>
-                </div>
-
-                {subscription?.status && (
-                  <div className="flex items-center justify-between py-1 border-b border-border/40">
-                    <span className="text-sm text-muted-foreground">Status</span>
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      {subscription.status === "ACTIVE" ? (
-                        <FiCheckCircle className="w-3.5 h-3.5 text-green-500" />
-                      ) : (
-                        <FiXCircle className="w-3.5 h-3.5 text-destructive" />
-                      )}
-                      {subscription.status}
-                    </span>
+            {/* Admin — full access banner */}
+            {isAdmin ? (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="pt-5 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                    <FiCheckCircle className="w-5 h-5 text-primary" />
                   </div>
-                )}
-
-                {subscription?.currentPeriodEnd && (
-                  <div className="flex items-center justify-between py-1 border-b border-border/40">
-                    <span className="text-sm text-muted-foreground">
-                      {isCancelling ? "Access until" : "Renews on"}
-                    </span>
-                    <span className="text-sm font-medium">
-                      {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
-                        month: "long", day: "numeric", year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                )}
-
-                {subscription?.currentPeriodStart && (
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-sm text-muted-foreground">Started</span>
-                    <span className="text-sm">
-                      {new Date(subscription.currentPeriodStart).toLocaleDateString("en-US", {
-                        month: "long", day: "numeric", year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Cancel warning banner */}
-            {isCancelling && (
-              <div className="flex items-start gap-3 p-3.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm">
-                <FiAlertCircle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                <p className="text-yellow-200">
-                  Your subscription is set to cancel at the end of the billing period. You&apos;ll retain
-                  access to premium content until{" "}
-                  <strong>
-                    {subscription?.currentPeriodEnd
-                      ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
-                      : "period end"}
-                  </strong>
-                  .
-                </p>
-              </div>
-            )}
-
-            {/* FREE plan — upgrade options */}
-            {!isPaid && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="pt-5 space-y-4">
                   <div>
-                    <p className="font-semibold text-sm mb-1">Upgrade to Premium</p>
-                    <p className="text-xs text-muted-foreground">
-                      Unlock unlimited reviews, premium content, and an ad-free experience.
+                    <p className="font-semibold">Admin Account — Full Access</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      As an administrator, you have unrestricted access to all content and features.
+                      No subscription is required.
                     </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <CheckoutButton plan="MONTHLY" className="flex-1 text-sm h-9" size="sm">
-                      Monthly — $9.99/mo
-                    </CheckoutButton>
-                    <CheckoutButton plan="YEARLY" variant="outline" className="flex-1 text-sm h-9" size="sm">
-                      Yearly — $95.88/yr
-                    </CheckoutButton>
                   </div>
                 </CardContent>
               </Card>
-            )}
+            ) : (
+              <>
+                {/* Expired notice */}
+                {isExpired && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+                    <FiXCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-destructive-foreground">
+                      Your subscription has expired. Upgrade again to restore premium access.
+                    </p>
+                  </div>
+                )}
 
-            {/* Paid plan — cancel option */}
-            {isPaid && !isCancelling && (
-              <div className="pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/60"
-                  onClick={handleCancelSubscription}
-                  disabled={cancelling}
-                >
-                  {cancelling ? "Cancelling..." : "Cancel Subscription"}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  You&apos;ll keep access until the end of your current billing period.
-                </p>
-              </div>
+                {/* Current plan card */}
+                <Card className="border-border/50">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <FiCreditCard className="w-4 h-4 text-primary" />
+                      <h3 className="font-semibold">Current Plan</h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between py-1 border-b border-border/40">
+                      <span className="text-sm text-muted-foreground">Plan</span>
+                      <Badge variant={planBadgeVariant} className="font-semibold">{plan}</Badge>
+                    </div>
+
+                    {subscription?.status && (
+                      <div className="flex items-center justify-between py-1 border-b border-border/40">
+                        <span className="text-sm text-muted-foreground">Status</span>
+                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                          {subscription.status === "ACTIVE" ? (
+                            <FiCheckCircle className="w-3.5 h-3.5 text-green-500" />
+                          ) : (
+                            <FiXCircle className="w-3.5 h-3.5 text-destructive" />
+                          )}
+                          {subscription.status}
+                        </span>
+                      </div>
+                    )}
+
+                    {daysRemaining !== null && (
+                      <div className="flex items-center justify-between py-1 border-b border-border/40">
+                        <span className="text-sm text-muted-foreground">Days remaining</span>
+                        <span className={`text-sm font-semibold ${daysRemaining <= 7 ? "text-yellow-400" : "text-green-400"}`}>
+                          {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
+
+                    {subscription?.currentPeriodEnd && (
+                      <div className="flex items-center justify-between py-1 border-b border-border/40">
+                        <span className="text-sm text-muted-foreground">
+                          {isCancelling ? "Access until" : "Renews on"}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
+                            month: "long", day: "numeric", year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    )}
+
+                    {subscription?.currentPeriodStart && (
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm text-muted-foreground">Started</span>
+                        <span className="text-sm">
+                          {new Date(subscription.currentPeriodStart).toLocaleDateString("en-US", {
+                            month: "long", day: "numeric", year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Cancel warning banner */}
+                {isCancelling && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm">
+                    <FiAlertCircle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    <p className="text-yellow-200">
+                      Your subscription is set to cancel at the end of the billing period. You&apos;ll retain
+                      access to premium content until{" "}
+                      <strong>
+                        {subscription?.currentPeriodEnd
+                          ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+                          : "period end"}
+                      </strong>
+                      .
+                    </p>
+                  </div>
+                )}
+
+                {/* FREE plan — upgrade options */}
+                {!isPaid && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardContent className="pt-5 space-y-4">
+                      <div>
+                        <p className="font-semibold text-sm mb-1">
+                          {isExpired ? "Reactivate Your Subscription" : "Upgrade to Premium"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Unlock unlimited reviews, premium content, and an ad-free experience.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <CheckoutButton plan="MONTHLY" className="flex-1 text-sm h-9" size="sm">
+                          Monthly — $9.99/mo
+                        </CheckoutButton>
+                        <CheckoutButton plan="YEARLY" variant="outline" className="flex-1 text-sm h-9" size="sm">
+                          Yearly — $95.88/yr
+                        </CheckoutButton>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Paid plan — cancel option */}
+                {isPaid && !isCancelling && (
+                  <div className="pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/60"
+                      onClick={handleCancelSubscription}
+                      disabled={cancelling}
+                    >
+                      {cancelling ? "Cancelling..." : "Cancel Subscription"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      You&apos;ll keep access until the end of your current billing period.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </TabsContent>

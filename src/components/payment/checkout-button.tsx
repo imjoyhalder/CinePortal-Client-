@@ -26,6 +26,8 @@ export default function CheckoutButton({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  if ((session?.user as { role?: string } | undefined)?.role === "ADMIN") return null;
+
   async function handleCheckout() {
     if (!session?.user) {
       router.push("/sign-in");

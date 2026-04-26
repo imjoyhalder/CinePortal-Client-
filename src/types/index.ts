@@ -64,13 +64,14 @@ export interface User {
 
 export interface Subscription {
   id?: string;
-  plan: SubscriptionPlan;
-  status: SubscriptionStatus;
+  plan: SubscriptionPlan | "ADMIN";
+  status: SubscriptionStatus | "ACTIVE";
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
+  adminAccess?: boolean;
 }
 
 export interface WatchlistItem {
