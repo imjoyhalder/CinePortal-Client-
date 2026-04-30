@@ -72,10 +72,10 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4">Support</h4>
             <ul className="space-y-2">
               {[
-                { href: "#", label: "Help Center" },
-                { href: "#", label: "Privacy Policy" },
-                { href: "#", label: "Terms of Service" },
-                { href: "#", label: "Contact Us" },
+                { href: "#help", label: "Help Center" },
+                { href: "#privacy", label: "Privacy Policy" },
+                { href: "#terms", label: "Terms of Service" },
+                { href: "#contact", label: "Contact Us" },
               ].map(({ href, label }) => (
                 <li key={href}>
                   <Link href={href} className="text-sm text-muted-foreground hover:text-primary transition-colors">

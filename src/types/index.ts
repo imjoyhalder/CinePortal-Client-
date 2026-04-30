@@ -36,7 +36,7 @@ export interface Review {
   updatedAt: string;
   userId: string;
   mediaId: string;
-  user: { id: string; name: string; image: string | null };
+  user?: { id: string; name: string; image: string | null };
   media?: { id: string; title: string; posterUrl: string | null; type: MediaType };
   _count: { likes: number; comments: number };
 }

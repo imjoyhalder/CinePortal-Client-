@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import CheckoutButton from "@/components/payment/checkout-button";
+import { useSession } from "@/lib/auth-client";
 
 const COMPARISON_ROWS = [
   { label: "Browse movies & series", free: true, pro: true, premium: true },
@@ -21,6 +22,8 @@ const COMPARISON_ROWS = [
 
 export default function PricingSection() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
   return (
     <section id="pricing" className="py-20 bg-background">
@@ -143,9 +146,15 @@ export default function PricingSection() {
             </CardContent>
 
             <CardFooter className="pt-4">
-              <CheckoutButton plan="MONTHLY" variant="default" className="w-full">
-                Start Pro
-              </CheckoutButton>
+              {isAdmin ? (
+                <Button variant="default" className="w-full opacity-60" disabled>
+                  Admin Access Included
+                </Button>
+              ) : (
+                <CheckoutButton plan="MONTHLY" variant="default" className="w-full">
+                  Start Pro
+                </CheckoutButton>
+              )}
             </CardFooter>
           </Card>
 
@@ -190,13 +199,19 @@ export default function PricingSection() {
             </CardContent>
 
             <CardFooter className="pt-4">
-              <CheckoutButton
-                plan="YEARLY"
-                variant="default"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                Start Premium
-              </CheckoutButton>
+              {isAdmin ? (
+                <Button className="w-full bg-purple-600 text-white opacity-60" disabled>
+                  Admin Access Included
+                </Button>
+              ) : (
+                <CheckoutButton
+                  plan="YEARLY"
+                  variant="default"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Start Premium
+                </CheckoutButton>
+              )}
             </CardFooter>
           </Card>
         </div>

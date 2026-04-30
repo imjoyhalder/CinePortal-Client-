@@ -69,13 +69,13 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <Avatar className="w-9 h-9">
-              <AvatarImage src={review.user.image ?? undefined} />
+              <AvatarImage src={review.user?.image ?? undefined} />
               <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                {review.user.name?.charAt(0).toUpperCase()}
+                {review.user?.name?.charAt(0).toUpperCase() ?? "?"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{review.user.name}</p>
+              <p className="text-sm font-medium">{review.user?.name ?? "Unknown"}</p>
               <p className="text-xs text-muted-foreground">
                 {new Date(review.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
