@@ -45,8 +45,8 @@ export default function SignUpForm() {
         { name: values.name, email: values.email, password: values.password },
         {
           onSuccess: () => {
-            toast.success("Account created! Please check your email to verify your account.");
-            router.push("/sign-in");
+            toast.success("Account created! Check your email for a 6-digit verification code.");
+            router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
           },
           onError: (ctx) => {
             toast.error(ctx.error.message || "Registration failed");

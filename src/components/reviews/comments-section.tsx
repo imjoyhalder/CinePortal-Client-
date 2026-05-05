@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiMessageSquare, FiSend, FiCornerDownRight } from "react-icons/fi";
+import Link from "next/link";
+import { FiMessageSquare, FiSend, FiCornerDownRight, FiLock } from "react-icons/fi";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
-import type { Comment } from "@/types";
+import type { Comment, ApiResponse, Subscription } from "@/types";
 
 interface CommentsSectionProps {
   reviewId: string;
+  pricing?: "free" | "premium";
 }
 
 function CommentItem({ comment, onReply, currentUserId, onDelete }: { comment: Comment; reviewId: string; onReply: (id: string) => void; currentUserId?: string; onDelete?: () => void }) {
@@ -73,7 +75,7 @@ function CommentItem({ comment, onReply, currentUserId, onDelete }: { comment: C
   );
 }
 
-export default function CommentsSection({ reviewId }: CommentsSectionProps) {
+export default function CommentsSection({ reviewId, pricing }: CommentsSectionProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,10 +83,27 @@ export default function CommentsSection({ reviewId }: CommentsSectionProps) {
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
+
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
   useEffect(() => {
     loadComments();
   }, [reviewId]);
+
+  useEffect(() => {
+    if (!showForm || pricing !== "premium" || !session || isAdmin) return;
+    if (hasSubscription !== null) return;
+
+    api.get<ApiResponse<Subscription>>("/payments/subscription")
+      .then((r) => {
+        const sub = r.data;
+        setHasSubscription(
+          sub?.status === "ACTIVE" && sub.plan !== "FREE"
+        );
+      })
+      .catch(() => setHasSubscription(false));
+  }, [showForm, pricing, session, isAdmin, hasSubscription]);
 
   async function loadComments() {
     try {
@@ -129,6 +148,8 @@ export default function CommentsSection({ reviewId }: CommentsSectionProps) {
   }
 
   const totalComments = comments.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
+  const isPremium = pricing === "premium";
+  const canComment = isAdmin || !isPremium || hasSubscription === true;
 
   return (
     <div className="mt-4 pt-4 border-t border-border/30">
@@ -159,37 +180,51 @@ export default function CommentsSection({ reviewId }: CommentsSectionProps) {
           {loading && <p className="text-xs text-muted-foreground">Loading...</p>}
 
           {session ? (
-            <div className="flex gap-2 mt-2">
-              <Avatar className="w-7 h-7 shrink-0">
-                <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
-                  {session.user.name?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                {replyTo && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <FiCornerDownRight className="w-3 h-3" /> Replying to comment{" "}
-                    <button className="underline" onClick={() => setReplyTo(null)}>Cancel</button>
-                  </p>
-                )}
-                <Textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder={replyTo ? "Write a reply..." : "Add a comment..."}
-                  rows={2}
-                  className="text-sm resize-none"
-                />
-                <Button
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={handleSubmit}
-                  disabled={submitting || !content.trim()}
-                >
-                  <FiSend className="w-3 h-3" />
-                  {submitting ? "Posting..." : "Post"}
+            canComment ? (
+              <div className="flex gap-2 mt-2">
+                <Avatar className="w-7 h-7 shrink-0">
+                  <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                    {session.user.name?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  {replyTo && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <FiCornerDownRight className="w-3 h-3" /> Replying to comment{" "}
+                      <button className="underline" onClick={() => setReplyTo(null)}>Cancel</button>
+                    </p>
+                  )}
+                  <Textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder={replyTo ? "Write a reply..." : "Add a comment..."}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handleSubmit}
+                    disabled={submitting || !content.trim()}
+                  >
+                    <FiSend className="w-3 h-3" />
+                    {submitting ? "Posting..." : "Post"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2.5 py-4 px-4 rounded-xl border border-primary/20 bg-primary/5 text-center mt-2">
+                <FiLock className="w-4 h-4 text-primary/70" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Commenting on premium content requires an active subscription.
+                </p>
+                <Button size="sm" asChild className="h-7 text-xs gap-1.5">
+                  <Link href="/#pricing">
+                    Upgrade Plan
+                  </Link>
                 </Button>
               </div>
-            </div>
+            )
           ) : (
             <p className="text-xs text-muted-foreground">Sign in to comment</p>
           )}

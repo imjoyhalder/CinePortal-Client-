@@ -1,62 +1,54 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiSearch, FiX, FiChevronDown, FiFilter } from "react-icons/fi";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import MovieCard, { MovieCardSkeleton } from "@/components/movies/movie-card";
 import { api } from "@/lib/api";
 import type { ApiResponse, Media } from "@/types";
 
-const GENRES = ["Action", "Adventure", "Comedy", "Drama", "Sci-Fi", "Thriller", "Horror", "Romance", "Documentary", "Animation"];
+const GENRES    = ["Action", "Adventure", "Comedy", "Drama", "Sci-Fi", "Thriller", "Horror", "Romance", "Documentary", "Animation"];
 const PLATFORMS = ["Netflix", "Disney+", "Prime Video", "Apple TV+", "HBO Max", "Hulu"];
 
-const GENRE_EMOJIS: Record<string, string> = {
-  Action: "🔥",
-  Adventure: "🌍",
-  Comedy: "😂",
-  Drama: "🎭",
-  "Sci-Fi": "🚀",
-  Thriller: "🎯",
-  Horror: "👻",
-  Romance: "❤️",
-  Documentary: "🎬",
-  Animation: "✨",
-};
+const SORT_OPTIONS = [
+  { value: "",             label: "Newest First"   },
+  { value: "mostReviewed", label: "Most Reviewed"  },
+  { value: "topRated",     label: "Top Rated"       },
+];
 
 export default function MoviesClient() {
-  const router = useRouter();
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const genreScrollRef = useRef<HTMLDivElement>(null);
 
-  const [movies, setMovies] = useState<Media[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [movies,  setMovies]  = useState<Media[]>([]);
+  const [total,   setTotal]   = useState(0);
+  const [page,    setPage]    = useState(1);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [type, setType] = useState(searchParams.get("type") || "");
-  const [genre, setGenre] = useState(searchParams.get("genre") || "");
+  const [search,   setSearch]   = useState(searchParams.get("search")            || "");
+  const [type,     setType]     = useState(searchParams.get("type")               || "");
+  const [genre,    setGenre]    = useState(searchParams.get("genre")              || "");
   const [platform, setPlatform] = useState(searchParams.get("streamingPlatform") || "");
-  const [pricing, setPricing] = useState(searchParams.get("pricing") || "");
-  const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "");
-  const [showFilters, setShowFilters] = useState(false);
+  const [pricing,  setPricing]  = useState(searchParams.get("pricing")            || "");
+  const [sortBy,   setSortBy]   = useState(searchParams.get("sortBy")             || "");
 
   const LIMIT = 18;
 
   const buildQuery = useCallback(() => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (type) params.set("type", type);
-    if (genre) params.set("genre", genre);
-    if (platform) params.set("streamingPlatform", platform);
-    if (pricing) params.set("pricing", pricing);
-    if (sortBy) params.set("sortBy", sortBy);
-    params.set("page", String(page));
-    params.set("limit", String(LIMIT));
-    return params.toString();
+    const p = new URLSearchParams();
+    if (search)   p.set("search",           search);
+    if (type)     p.set("type",             type);
+    if (genre)    p.set("genre",            genre);
+    if (platform) p.set("streamingPlatform", platform);
+    if (pricing)  p.set("pricing",          pricing);
+    if (sortBy)   p.set("sortBy",           sortBy);
+    p.set("page",  String(page));
+    p.set("limit", String(LIMIT));
+    return p.toString();
   }, [search, type, genre, platform, pricing, sortBy, page]);
 
   useEffect(() => {
@@ -64,11 +56,8 @@ export default function MoviesClient() {
     async function load() {
       setLoading(true);
       try {
-        const data = await api.get<ApiResponse<Media[]>>(`/movies?${buildQuery()}`);
-        if (!cancelled) {
-          setMovies(data.data ?? []);
-          setTotal(data.meta?.total ?? 0);
-        }
+        const d = await api.get<ApiResponse<Media[]>>(`/movies?${buildQuery()}`);
+        if (!cancelled) { setMovies(d.data ?? []); setTotal(d.meta?.total ?? 0); }
       } catch {
         if (!cancelled) setMovies([]);
       } finally {
@@ -80,191 +69,276 @@ export default function MoviesClient() {
   }, [buildQuery]);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (type) params.set("type", type);
-    if (genre) params.set("genre", genre);
-    if (platform) params.set("streamingPlatform", platform);
-    if (pricing) params.set("pricing", pricing);
-    if (sortBy) params.set("sortBy", sortBy);
-    if (page > 1) params.set("page", String(page));
-    router.replace(`/movies${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
+    const p = new URLSearchParams();
+    if (search)   p.set("search",            search);
+    if (type)     p.set("type",              type);
+    if (genre)    p.set("genre",             genre);
+    if (platform) p.set("streamingPlatform", platform);
+    if (pricing)  p.set("pricing",           pricing);
+    if (sortBy)   p.set("sortBy",            sortBy);
+    if (page > 1) p.set("page",              String(page));
+    router.replace(`/movies${p.toString() ? `?${p.toString()}` : ""}`, { scroll: false });
   }, [search, type, genre, platform, pricing, sortBy, page, router]);
 
   function clearFilters() {
     setSearch(""); setType(""); setGenre(""); setPlatform(""); setPricing(""); setSortBy(""); setPage(1);
   }
 
-  const hasFilters = !!(search || type || genre || platform || pricing || sortBy);
-
-  const activeFilterCount = [search, type, genre, platform, pricing, sortBy].filter(Boolean).length;
-
-  const totalPages = Math.ceil(total / LIMIT);
-
-  function scrollGenres(direction: "left" | "right") {
-    if (!genreScrollRef.current) return;
-    genreScrollRef.current.scrollBy({ left: direction === "left" ? -240 : 240, behavior: "smooth" });
+  function removeFilter(key: "type" | "genre" | "platform" | "pricing" | "sortBy") {
+    if (key === "type")     { setType(""); setPage(1); }
+    if (key === "genre")    { setGenre(""); setPage(1); }
+    if (key === "platform") { setPlatform(""); setPage(1); }
+    if (key === "pricing")  { setPricing(""); setPage(1); }
+    if (key === "sortBy")   { setSortBy(""); setPage(1); }
   }
 
+  const totalPages      = Math.ceil(total / LIMIT);
+  const activeFilters   = [
+    type     && { key: "type"     as const, label: type === "MOVIE" ? "Movies" : "Series" },
+    genre    && { key: "genre"    as const, label: genre },
+    platform && { key: "platform" as const, label: platform },
+    pricing  && { key: "pricing"  as const, label: pricing === "premium" ? "Premium" : "Free" },
+    sortBy   && { key: "sortBy"   as const, label: SORT_OPTIONS.find(s => s.value === sortBy)?.label ?? sortBy },
+  ].filter(Boolean) as { key: "type" | "genre" | "platform" | "pricing" | "sortBy"; label: string }[];
+
   return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Browse Movies &amp; Series</h1>
-        <p className="text-muted-foreground text-lg">
-          Discover and explore thousands of movies and TV shows.
+    <div className="container mx-auto px-4 py-8 md:py-10">
+
+      {/* Page heading */}
+      <div className="mb-6">
+        <h1 className="text-3xl md:text-4xl font-bold mb-1">Browse Movies &amp; Series</h1>
+        <p className="text-muted-foreground">
+          {total > 0 ? `${total.toLocaleString()} titles available` : "Discover and explore movies and TV shows"}
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="flex gap-3 items-center">
+      {/* ── Filter bar ──────────────────────────────────────────────────────── */}
+      <div className="mb-6 space-y-3">
+
+        {/* Search + controls row */}
+        <div className="flex gap-2 items-center">
           <div className="relative flex-1">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search titles, directors, cast..."
-              className="pl-12 h-12 text-base bg-card border-border/60 focus-visible:border-primary"
+              placeholder="Search titles, directors, cast…"
+              className="pl-10 h-10 bg-card border-border/60 focus-visible:border-primary"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
+            {search && (
+              <button
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => { setSearch(""); setPage(1); }}
+              >
+                <FiX className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <Button
-            variant={showFilters ? "default" : "outline"}
-            onClick={() => setShowFilters(!showFilters)}
-            className="h-12 px-5 gap-2 shrink-0 relative"
+            variant={filtersOpen ? "default" : "outline"}
+            size="sm"
+            className="h-10 px-4 gap-2 shrink-0"
+            onClick={() => setFiltersOpen(!filtersOpen)}
           >
-            <FiFilter className="w-4 h-4" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold leading-none">
-                {activeFilterCount}
+            <FiFilter className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilters.length > 0 && (
+              <span className="bg-primary-foreground text-primary text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                {activeFilters.length}
               </span>
             )}
+            <FiChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`} />
           </Button>
 
-          {hasFilters && (
-            <Button variant="ghost" className="h-12 px-4 shrink-0 text-muted-foreground hover:text-foreground gap-2" onClick={clearFilters}>
-              <FiX className="w-4 h-4" />
-              Clear all
+          {activeFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 px-3 gap-1.5 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={clearFilters}
+            >
+              <FiX className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Clear all</span>
             </Button>
           )}
         </div>
 
-        {showFilters && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 p-4 bg-card rounded-xl border border-border/50 animate-in fade-in slide-in-from-top-2 duration-200">
-            <Select value={type} onValueChange={(v) => { setType(!v || v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Type" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="MOVIE">Movies</SelectItem>
-                <SelectItem value="SERIES">Series</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Expanded filter panel */}
+        {filtersOpen && (
+          <div className="rounded-xl border border-border/60 bg-card p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150">
 
-            <Select value={genre} onValueChange={(v) => { setGenre(!v || v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Genre" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Genres</SelectItem>
-                {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {/* Row 1: Type + Genre + Platform */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <fieldset>
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Type</legend>
+                <div className="flex flex-wrap gap-2">
+                  {[{ v: "", label: "All" }, { v: "MOVIE", label: "Movies" }, { v: "SERIES", label: "Series" }].map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => { setType(v); setPage(1); }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        type === v
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
-            <Select value={platform} onValueChange={(v) => { setPlatform(!v || v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Platform" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Platforms</SelectItem>
-                {PLATFORMS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
+              <fieldset>
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</legend>
+                <div className="flex flex-wrap gap-2">
+                  {[{ v: "", label: "All" }, { v: "free", label: "Free" }, { v: "premium", label: "Premium" }].map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => { setPricing(v); setPage(1); }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        pricing === v
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
-            <Select value={pricing} onValueChange={(v) => { setPricing(!v || v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pricing" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Content</SelectItem>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-              </SelectContent>
-            </Select>
+              <fieldset>
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sort By</legend>
+                <div className="flex flex-wrap gap-2">
+                  {SORT_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => { setSortBy(value); setPage(1); }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        sortBy === value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
 
-            <Select value={sortBy} onValueChange={(v) => { setSortBy(!v || v === "default" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sort by" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Newest First</SelectItem>
-                <SelectItem value="mostReviewed">Most Reviewed</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Row 2: Genres */}
+            <fieldset>
+              <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Genre</legend>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => { setGenre(""); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    genre === ""
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  All
+                </button>
+                {GENRES.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => { setGenre(genre === g ? "" : g); setPage(1); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      genre === g
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* Row 3: Platforms */}
+            <fieldset>
+              <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Platform</legend>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => { setPlatform(""); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    platform === ""
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  All
+                </button>
+                {PLATFORMS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => { setPlatform(platform === p ? "" : p); setPage(1); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      platform === p
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        )}
+
+        {/* Active filter chips */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-muted-foreground">Active:</span>
+            {activeFilters.map(({ key, label }) => (
+              <Badge
+                key={key}
+                variant="secondary"
+                className="gap-1.5 pr-1.5 text-xs cursor-pointer hover:bg-destructive/15 hover:text-destructive transition-colors"
+                onClick={() => removeFilter(key)}
+              >
+                {label}
+                <FiX className="w-3 h-3" />
+              </Badge>
+            ))}
           </div>
         )}
       </div>
 
-      <div className="mb-10">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Popular Genres</h2>
-        <div className="relative flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 rounded-full w-8 h-8 border-border/60"
-            onClick={() => scrollGenres("left")}
-          >
-            <FiChevronLeft className="w-4 h-4" />
-          </Button>
-
-          <div
-            ref={genreScrollRef}
-            className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth flex-1"
-          >
-            {GENRES.map((g) => (
-              <button
-                key={g}
-                onClick={() => { setGenre(genre === g ? "" : g); setShowFilters(false); setPage(1); }}
-                className={`flex flex-col items-center gap-1.5 shrink-0 rounded-2xl px-5 py-3 border transition-all duration-150 cursor-pointer ${
-                  genre === g
-                    ? "bg-primary/15 border-primary text-primary"
-                    : "bg-card border-border/50 text-foreground hover:border-primary/50 hover:bg-primary/5"
-                }`}
-              >
-                <span className="text-2xl leading-none">{GENRE_EMOJIS[g] ?? "🎬"}</span>
-                <span className="text-xs font-medium whitespace-nowrap">{g}</span>
-              </button>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 rounded-full w-8 h-8 border-border/60"
-            onClick={() => scrollGenres("right")}
-          >
-            <FiChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
+      {/* ── Results ─────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {Array.from({ length: 18 }).map((_, i) => <MovieCardSkeleton key={i} />)}
         </div>
       ) : movies.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5">
-          <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center text-6xl">
-            🎬
-          </div>
-          <div className="text-center space-y-2">
-            <h3 className="text-2xl font-bold">No movies found.</h3>
-            <p className="text-muted-foreground max-w-sm">
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center text-4xl">🎬</div>
+          <div>
+            <h3 className="text-xl font-bold mb-1">No titles found</h3>
+            <p className="text-muted-foreground text-sm max-w-xs">
               Try adjusting your search or filters to find what you&apos;re looking for.
             </p>
           </div>
-          <Button onClick={clearFilters} className="gap-2">
-            <FiFilter className="w-4 h-4" />
-            Clear filters
+          <Button variant="outline" onClick={clearFilters} className="gap-2">
+            <FiX className="w-4 h-4" /> Clear filters
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {movies.map((m) => <MovieCard key={m.id} media={m} />)}
-        </div>
+        <>
+          <p className="text-sm text-muted-foreground mb-4">
+            Showing {movies.length} of {total.toLocaleString()} result{total !== 1 ? "s" : ""}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {movies.map((m) => <MovieCard key={m.id} media={m} />)}
+          </div>
+        </>
       )}
 
+      {/* ── Pagination ──────────────────────────────────────────────────────── */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-10">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>

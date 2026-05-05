@@ -37,7 +37,7 @@ export interface Review {
   userId: string;
   mediaId: string;
   user?: { id: string; name: string; image: string | null };
-  media?: { id: string; title: string; posterUrl: string | null; type: MediaType };
+  media?: { id: string; title: string; posterUrl: string | null; type: MediaType; pricing?: Pricing };
   _count: { likes: number; comments: number };
 }
 
@@ -92,6 +92,17 @@ export interface FeaturedResponse {
   newlyAdded: Media[];
 }
 
+export interface AdminSubscription {
+  id: string;
+  plan: SubscriptionPlan | "ADMIN";
+  status: SubscriptionStatus | "ACTIVE";
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  createdAt: string;
+  user: { id: string; name: string; email: string; image: string | null };
+}
+
 export interface DashboardStats {
   stats: {
     totalUsers: number;
@@ -99,7 +110,10 @@ export interface DashboardStats {
     totalReviews: number;
     pendingReviews: number;
     activeSubscriptions: number;
+    monthlySubscriptions: number;
+    yearlySubscriptions: number;
+    estimatedMRR: number;
   };
-  recentReviews: (Review & { user: { name: string; email: string } })[];
+  recentReviews: (Review & { user: { id: string; name: string; email: string; image: string | null }; media: { id: string; title: string; posterUrl: string | null } | null })[];
   topRatedMedia: (Media & { averageRating: number })[];
 }

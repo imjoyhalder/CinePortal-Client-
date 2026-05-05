@@ -7,6 +7,7 @@ import {
   FiGrid,
   FiUsers,
   FiMessageSquare,
+  FiCreditCard,
   FiLogOut,
   FiChevronLeft,
   FiMenu,
@@ -23,10 +24,11 @@ import { signOut } from "@/lib/auth-client";
 import { toast } from "sonner";
 
 const navItems = [
-  { href: "/admin/dashboard", icon: FiGrid, label: "Dashboard" },
-  { href: "/admin/movies", icon: MdOutlineLocalMovies, label: "Movies & Series" },
-  { href: "/admin/reviews", icon: FiMessageSquare, label: "Reviews" },
-  { href: "/admin/users", icon: FiUsers, label: "Users" },
+  { href: "/admin/dashboard",      icon: FiGrid,               label: "Dashboard" },
+  { href: "/admin/movies",         icon: MdOutlineLocalMovies, label: "Movies & Series" },
+  { href: "/admin/reviews",        icon: FiMessageSquare,      label: "Reviews" },
+  { href: "/admin/users",          icon: FiUsers,              label: "Users" },
+  { href: "/admin/subscriptions",  icon: FiCreditCard,         label: "Subscriptions" },
 ];
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FiLoader } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
@@ -59,7 +60,14 @@ export default function CheckoutButton({
       onClick={handleCheckout}
       disabled={loading}
     >
-      {loading ? "Redirecting..." : children}
+      {loading ? (
+        <span className="flex items-center gap-2">
+          <FiLoader className="w-4 h-4 animate-spin" />
+          Redirecting…
+        </span>
+      ) : (
+        children
+      )}
     </Button>
   );
 }

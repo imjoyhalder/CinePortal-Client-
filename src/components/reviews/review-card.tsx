@@ -23,7 +23,7 @@ interface ReviewCardProps {
 
 export default function ReviewCard({ review, showMedia = false, onDeleted, onEdit }: ReviewCardProps) {
   const { data: session } = useSession();
-  const [likes, setLikes] = useState(review._count.likes);
+  const [likes, setLikes] = useState(review._count?.likes ?? 0);
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -149,7 +149,7 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
             </div>
           )}
         </div>
-        <CommentsSection reviewId={review.id} />
+        <CommentsSection reviewId={review.id} pricing={review.media?.pricing} />
       </CardContent>
     </Card>
   );

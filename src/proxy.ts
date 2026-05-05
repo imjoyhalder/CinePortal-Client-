@@ -38,5 +38,6 @@ export const config = {
   matcher: [
     // Skip Next.js internals, static files, and the API proxy route
     "/((?!api|_next/static|_next/image|favicon\\.ico).*)",
+    
   ],
 };
