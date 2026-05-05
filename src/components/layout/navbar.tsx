@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from "@/lib/auth-client";
 import { toast } from "sonner";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/",                           label: "Home",     exact: true },
@@ -149,10 +150,11 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0 mr-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          {/* <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <MdMovie className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-bold text-base hidden sm:block">CinePortal</span>
+          <span className="font-bold text-base hidden sm:block">CinePortal</span> */}
+          <Image alt="Logo" src={"powersync.svg"} width={45} height={45}/>
         </Link>
 
         {/* Desktop nav */}

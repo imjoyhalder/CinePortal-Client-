@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FiThumbsUp, FiAlertTriangle, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiThumbsUp, FiAlertTriangle, FiEdit2, FiTrash2, FiStar } from "react-icons/fi";
 import CommentsSection from "./comments-section";
 import { AiFillStar } from "react-icons/ai";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,13 @@ interface ReviewCardProps {
   showMedia?: boolean;
   onDeleted?: () => void;
   onEdit?: () => void;
+}
+
+function isPremiumAuthor(user: Review["user"]): boolean {
+  return (
+    user?.subscription?.status === "ACTIVE" &&
+    (user.subscription.plan === "MONTHLY" || user.subscription.plan === "YEARLY")
+  ) ?? false;
 }
 
 export default function ReviewCard({ review, showMedia = false, onDeleted, onEdit }: ReviewCardProps) {
@@ -75,7 +82,14 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{review.user?.name ?? "Unknown"}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium">{review.user?.name ?? "Unknown"}</p>
+                {isPremiumAuthor(review.user) && (
+                  <Badge className="h-4 px-1.5 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/20 gap-0.5 font-semibold">
+                    <FiStar className="w-2.5 h-2.5" /> Pro
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {new Date(review.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",

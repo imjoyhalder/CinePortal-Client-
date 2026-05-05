@@ -1,15 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FiMail, FiMessageSquare, FiSend, FiCheck, FiGithub, FiTwitter } from "react-icons/fi";
+import {
+  FiMail, FiMessageSquare, FiSend, FiCheck,
+  FiGithub, FiTwitter, FiZap,
+} from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth-client";
+import { api } from "@/lib/api";
+import type { ApiResponse, Subscription } from "@/types";
 
-const CONTACT_INFO = [
+interface ContactInfo {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  href: string;
+  color: string;
+}
+
+const CONTACT_INFO: ContactInfo[] = [
   {
     icon: <FiMail className="w-5 h-5" />,
     label: "Email",
@@ -43,16 +58,46 @@ const SUBJECTS = [
   "Other",
 ];
 
+interface FormState {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+const EMPTY_FORM: FormState = { name: "", email: "", subject: "", message: "" };
+
 export default function ContactClient() {
+  const { data: session } = useSession();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [isPriority, setIsPriority] = useState(false);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
+
+    api.get<ApiResponse<Subscription>>("/payments/subscription")
+      .then((r) => {
+        if (cancelled) return;
+        const sub = r.data;
+        setIsPriority(
+          sub?.status === "ACTIVE" && sub.plan !== "FREE"
+        );
+      })
+      .catch(() => undefined);
+
+    return () => { cancelled = true; };
+  }, [session?.user]);
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
       toast.error("Please fill in all required fields");
@@ -62,13 +107,18 @@ export default function ContactClient() {
     setTimeout(() => {
       setLoading(false);
       setSent(true);
-      toast.success("Message sent! We'll get back to you within 24 hours.");
+      toast.success(
+        isPriority
+          ? "Priority message sent! We'll respond within 12 hours."
+          : "Message sent! We'll get back to you within 24–48 hours."
+      );
     }, 1200);
   }
 
   return (
     <div className="min-h-screen py-16">
       <div className="container mx-auto px-4 max-w-5xl">
+
         {/* Header */}
         <div className="text-center mb-14">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -81,7 +131,8 @@ export default function ContactClient() {
         </div>
 
         <div className="grid lg:grid-cols-5 gap-10">
-          {/* Contact info sidebar */}
+
+          {/* Sidebar */}
           <div className="lg:col-span-2 space-y-6">
             <div>
               <h2 className="font-semibold mb-4">Other ways to reach us</h2>
@@ -107,8 +158,18 @@ export default function ContactClient() {
             <div className="rounded-xl border border-border/50 bg-card p-5">
               <h3 className="font-semibold mb-2">Response time</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                We typically respond within <strong className="text-foreground">24–48 hours</strong> on
-                business days. For urgent issues, mention it in your message and we&apos;ll prioritize.
+                {isPriority ? (
+                  <>
+                    As a Pro/Annual member you get{" "}
+                    <strong className="text-foreground">priority support</strong> — we
+                    aim to respond within <strong className="text-foreground">12 hours</strong>.
+                  </>
+                ) : (
+                  <>
+                    We typically respond within{" "}
+                    <strong className="text-foreground">24–48 hours</strong> on business days.
+                  </>
+                )}
               </p>
             </div>
 
@@ -132,15 +193,27 @@ export default function ContactClient() {
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Message sent!</h2>
                 <p className="text-muted-foreground mb-6">
-                  Thanks for reaching out. We&apos;ll get back to you within 24–48 hours.
+                  {isPriority
+                    ? "Your priority message is in our queue. Expect a reply within 12 hours."
+                    : "Thanks for reaching out. We'll get back to you within 24–48 hours."}
                 </p>
-                <Button variant="outline" onClick={() => { setSent(false); setForm({ name: "", email: "", subject: "", message: "" }); }}>
+                <Button
+                  variant="outline"
+                  onClick={() => { setSent(false); setForm(EMPTY_FORM); }}
+                >
                   Send another message
                 </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-border/50 bg-card p-6 lg:p-8">
-                <h2 className="text-lg font-semibold mb-2">Send us a message</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-semibold">Send us a message</h2>
+                  {isPriority && (
+                    <Badge className="gap-1.5 bg-amber-500/10 text-amber-400 border-amber-500/20 text-xs font-semibold">
+                      <FiZap className="w-3 h-3" /> Priority Support
+                    </Badge>
+                  )}
+                </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">

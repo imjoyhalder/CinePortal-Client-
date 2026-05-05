@@ -36,7 +36,12 @@ export interface Review {
   updatedAt: string;
   userId: string;
   mediaId: string;
-  user?: { id: string; name: string; image: string | null };
+  user?: {
+    id: string;
+    name: string;
+    image: string | null;
+    subscription?: { plan: SubscriptionPlan | "FREE"; status: string } | null;
+  };
   media?: { id: string; title: string; posterUrl: string | null; type: MediaType; pricing?: Pricing };
   _count: { likes: number; comments: number };
 }
