@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   FiUsers, FiFilm, FiMessageSquare, FiClock,
-  FiDollarSign, FiCalendar, FiLoader,
+  FiDollarSign, FiTrendingUp, FiCalendar, FiLoader,
 } from "react-icons/fi";
 import { MdSubscriptions } from "react-icons/md";
 import { Card, CardContent } from "@/components/ui/card";

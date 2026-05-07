@@ -118,6 +118,7 @@ export interface DashboardStats {
     monthlySubscriptions: number;
     yearlySubscriptions: number;
     estimatedMRR: number;
+    estimatedARR: number;
   };
   recentReviews: (Review & { user: { id: string; name: string; email: string; image: string | null }; media: { id: string; title: string; posterUrl: string | null } | null })[];
   topRatedMedia: (Media & { averageRating: number })[];
