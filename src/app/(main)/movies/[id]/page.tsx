@@ -123,7 +123,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
                 {avgRating && (
                   <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-full px-3 py-1 backdrop-blur-sm">
                     <AiFillStar className="w-3.5 h-3.5 text-yellow-400" />
-                    <span className="text-sm font-bold">{avgRating}/10</span>
+                    <span className="text-sm font-bold">{avgRating}/5</span>
                   </div>
                 )}
                 <span className="text-sm text-muted-foreground">
@@ -243,7 +243,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
             {avgRating && (
               <div className="text-right hidden sm:block">
                 <div className="text-3xl font-bold text-primary">{avgRating}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider">avg / 10</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">avg / 5</div>
               </div>
             )}
           </div>

@@ -32,7 +32,7 @@ export default function ReviewForm({ mediaId, onSuccess, onCancel }: ReviewFormP
   const [hover, setHover] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { content: "", hasSpoiler: false },
   });
@@ -64,27 +64,28 @@ export default function ReviewForm({ mediaId, onSuccess, onCancel }: ReviewFormP
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Star rating */}
+          {/* Star rating — 5 stars */}
           <div className="space-y-1.5">
             <Label>Rating</Label>
             <div className="flex items-center gap-1">
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
+              {Array.from({ length: 5 }, (_, i) => i + 1).map((star) => (
                 <button
                   key={star}
                   type="button"
                   onMouseEnter={() => setHover(star)}
                   onMouseLeave={() => setHover(0)}
                   onClick={() => setRating(star)}
+                  aria-label={`Rate ${star} out of 5`}
                 >
                   {star <= (hover || rating) ? (
-                    <AiFillStar className="w-6 h-6 text-primary" />
+                    <AiFillStar className="w-7 h-7 text-primary" />
                   ) : (
-                    <AiOutlineStar className="w-6 h-6 text-muted-foreground" />
+                    <AiOutlineStar className="w-7 h-7 text-muted-foreground" />
                   )}
                 </button>
               ))}
-              <span className="ml-2 text-sm text-muted-foreground">
-                {hover || rating || "?"}/10
+              <span className="ml-2 text-sm text-muted-foreground font-medium">
+                {hover || rating || "?"}/5
               </span>
             </div>
           </div>
