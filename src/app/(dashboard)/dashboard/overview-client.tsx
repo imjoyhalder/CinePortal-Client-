@@ -205,7 +205,7 @@ export default function DashboardOverviewClient() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{r.media?.title ?? "Unknown"}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-amber-400 font-semibold">{r.rating}/10</span>
+                    <span className="text-xs text-amber-400 font-semibold">{r.rating}/5</span>
                     <Badge
                       variant="secondary"
                       className={`text-xs py-0 px-1.5 ${

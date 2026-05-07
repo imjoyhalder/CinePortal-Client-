@@ -68,7 +68,7 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
     }
   }
 
-  const stars = Array.from({ length: 10 }, (_, i) => i + 1);
+  const stars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
     <Card className="border-border/50">
@@ -106,7 +106,7 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
                 className={`w-3.5 h-3.5 ${s <= review.rating ? "text-primary" : "text-muted-foreground/30"}`}
               />
             ))}
-            <span className="text-sm font-bold ml-1 text-primary">{review.rating}/10</span>
+            <span className="text-sm font-bold ml-1 text-primary">{review.rating}/5</span>
           </div>
         </div>
 

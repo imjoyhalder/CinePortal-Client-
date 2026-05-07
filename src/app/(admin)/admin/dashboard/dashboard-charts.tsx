@@ -241,7 +241,7 @@ export function DashboardCharts({ stats }: Props) {
                         <div className="flex items-center gap-1">
                           <FiStar className="w-3 h-3 text-amber-400" />
                           <span className="text-xs font-semibold">{review.rating}</span>
-                          <span className="text-xs text-muted-foreground">/10</span>
+                          <span className="text-xs text-muted-foreground">/5</span>
                         </div>
                       </td>
                       <td className="px-3 py-3 hidden md:table-cell max-w-45">

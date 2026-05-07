@@ -91,23 +91,24 @@ export default function EditReviewDialog({ review, onClose, onSaved }: EditRevie
             <div className="space-y-1.5">
               <Label>Rating</Label>
               <div className="flex items-center gap-1">
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
+                {Array.from({ length: 5 }, (_, i) => i + 1).map((star) => (
                   <button
                     key={star}
                     type="button"
                     onMouseEnter={() => setHover(star)}
                     onMouseLeave={() => setHover(0)}
                     onClick={() => setRating(star)}
+                    aria-label={`Rate ${star} out of 5`}
                   >
                     {star <= (hover || rating) ? (
-                      <AiFillStar className="w-6 h-6 text-primary" />
+                      <AiFillStar className="w-7 h-7 text-primary" />
                     ) : (
-                      <AiOutlineStar className="w-6 h-6 text-muted-foreground" />
+                      <AiOutlineStar className="w-7 h-7 text-muted-foreground" />
                     )}
                   </button>
                 ))}
-                <span className="ml-2 text-sm text-muted-foreground">
-                  {hover || rating || "?"}/10
+                <span className="ml-2 text-sm text-muted-foreground font-medium">
+                  {hover || rating || "?"}/5
                 </span>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiCheck, FiX, FiEyeOff } from "react-icons/fi";
+import { FiCheck, FiEyeOff } from "react-icons/fi";
 import { AiFillStar } from "react-icons/ai";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -81,7 +81,7 @@ export default function AdminReviewsClient() {
                       <span className="text-sm text-primary">{review.media?.title}</span>
                       <div className="flex items-center gap-0.5">
                         <AiFillStar className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-xs font-bold">{review.rating}/10</span>
+                        <span className="text-xs font-bold">{review.rating}/5</span>
                       </div>
                       <Badge
                         variant={review.status === "APPROVED" ? "default" : review.status === "PENDING" ? "secondary" : "destructive"}

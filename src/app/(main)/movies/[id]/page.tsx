@@ -249,7 +249,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="bg-card/50 p-5 rounded-2xl border border-border/30 mb-10">
-            <ReviewFormWrapper mediaId={media.id} />
+            <ReviewFormWrapper mediaId={media.id} pricing={media.pricing} />
           </div>
 
           <MovieReviewList initialReviews={allReviews} mediaId={media.id} />
