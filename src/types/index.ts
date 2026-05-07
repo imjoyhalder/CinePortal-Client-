@@ -108,6 +108,16 @@ export interface AdminSubscription {
   user: { id: string; name: string; email: string; image: string | null };
 }
 
+export interface UserDashboardStats {
+  totalReviews: number;
+  approvedReviews: number;
+  pendingReviews: number;
+  avgRating: number | null;
+  watchlistCount: number;
+  daysRemaining: number | null;
+  subscription: Subscription | null;
+}
+
 export interface DashboardStats {
   stats: {
     totalUsers: number;

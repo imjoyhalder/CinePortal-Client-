@@ -5,7 +5,7 @@ import { useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import ReviewForm from "./review-form";
 import Link from "next/link";
-import { FiLock } from "react-icons/fi";
+import { FiLock, FiLoader } from "react-icons/fi";
 import { api } from "@/lib/api";
 import type { ApiResponse, Subscription, Pricing } from "@/types";
 
@@ -27,7 +27,14 @@ export default function ReviewFormWrapper({ mediaId, pricing }: ReviewFormWrappe
       .catch(() => setSubscription(null));
   }, [session]);
 
-  if (isPending || subscription === undefined) return null;
+  if (isPending || subscription === undefined) {
+    return (
+      <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+        <FiLoader className="w-3 h-3 animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   if (!session) {
     return (

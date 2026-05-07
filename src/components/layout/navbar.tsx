@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from "@/lib/auth-client";
-import { toast } from "sonner";
 import Image from "next/image";
 
 const navLinks = [
@@ -108,8 +107,8 @@ export default function Navbar() {
 
   async function handleSignOut() {
     await signOut();
-    toast.success("Signed out successfully");
-    router.refresh();
+    // Hard redirect so the browser processes the Set-Cookie header that clears the session cookie
+    window.location.href = "/";
   }
 
   return (

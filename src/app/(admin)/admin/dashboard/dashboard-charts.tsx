@@ -1,270 +1,250 @@
 "use client";
 
+import React, { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie,
+  ResponsiveContainer, PieChart, Pie, Cell, TooltipProps
 } from "recharts";
-import { FiStar, FiArrowRight } from "react-icons/fi";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { FiStar, FiArrowRight, FiActivity, FiUsers, FiMessageSquare } from "react-icons/fi";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { DashboardStats, ReviewStatus } from "@/types";
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// --- Typed Configuration & Interfaces ---
 
-function buildLineChartData(totalUsers: number, totalReviews: number, activeSubs: number) {
-  const today = new Date();
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (6 - i));
-    const label  = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const factor = (i + 1) / 7;
-    return {
-      date:          label,
-      Users:         Math.round(totalUsers  * (0.60 + 0.40 * factor)),
-      Reviews:       Math.round(totalReviews * (0.55 + 0.45 * factor)),
-      Subscriptions: Math.round(activeSubs   * (0.65 + 0.35 * factor)),
-    };
-  });
+interface ChartDataItem {
+  date: string;
+  Users: number;
+  Reviews: number;
+  Subscriptions: number;
 }
 
-function statusBadgeClass(status: ReviewStatus): string {
-  if (status === "APPROVED")   return "bg-green-500/15 text-green-400 border-green-500/20";
-  if (status === "PENDING")    return "bg-amber-500/15 text-amber-400 border-amber-500/20";
-  return "bg-red-500/15 text-red-400 border-red-500/20";
+interface PieDataItem {
+  name: string;
+  value: number;
+  color: string;
 }
 
-const TOOLTIP_STYLE = {
-  background:   "hsl(var(--popover))",
-  border:       "1px solid hsl(var(--border))",
-  borderRadius: "8px",
-  fontSize:     12,
+interface StatusStyle {
+  color: string;
+  label: string;
+}
+
+const COLORS = {
+  users: "#3b82f6",
+  reviews: "#22c55e",
+  subs: "#a855f7",
+  monthly: "#22c55e",
+  yearly: "#a855f7",
+  free: "#64748b",
 };
 
-// ── component ──────────────────────────────────────────────────────────────
+// --- Strict Helper Functions ---
 
-type TopRatedMedia = DashboardStats["topRatedMedia"][number];
-type RecentReview  = DashboardStats["recentReviews"][number];
+const getStatusConfig = (status: ReviewStatus): StatusStyle => {
+  const configs: Record<ReviewStatus, StatusStyle> = {
+    APPROVED: { color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", label: "Approved" },
+    PENDING: { color: "text-amber-500 bg-amber-500/10 border-amber-500/20", label: "Pending" },
+    UNPUBLISHED: { color: "text-destructive bg-destructive/10 border-destructive/20", label: "Unpublished" },
+  };
+  return configs[status] || configs.PENDING;
+};
 
-interface Props { stats: DashboardStats }
+const generateLineData = (stats: DashboardStats["stats"]): ChartDataItem[] => {
+  const { totalUsers, totalReviews, activeSubscriptions } = stats;
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    const factor = (i + 1) / 7;
+    return {
+      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      Users: Math.round(totalUsers * (0.6 + 0.4 * factor)),
+      Reviews: Math.round(totalReviews * (0.55 + 0.45 * factor)),
+      Subscriptions: Math.round(activeSubscriptions * (0.65 + 0.35 * factor)),
+    };
+  });
+};
 
-export function DashboardCharts({ stats }: Props) {
-  const { totalUsers, totalReviews, activeSubscriptions, monthlySubscriptions, yearlySubscriptions } = stats.stats;
+// --- Strongly Typed Custom Tooltip ---
 
-  const lineData = buildLineChartData(totalUsers, totalReviews, activeSubscriptions);
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-popover border border-border p-3 rounded-lg shadow-xl text-[11px]">
+        <p className="font-bold mb-2 text-foreground">{label}</p>
+        {payload.map((entry, index: number) => (
+          <div key={index} className="flex items-center gap-3 mb-1" style={{ color: entry.color }}>
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-muted-foreground font-medium">{entry.name}:</span>
+            <span className="font-mono font-bold ml-auto text-foreground">{entry.value?.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
-  // Real plan breakdown from API
-  const freeCount = Math.max(0, totalUsers - activeSubscriptions);
-  const pieData = [
-    { name: "Monthly Pro",     value: monthlySubscriptions, color: "#22c55e" },
-    { name: "Annual Premium",  value: yearlySubscriptions,  color: "#a855f7" },
-    { name: "Free",            value: freeCount,            color: "#64748b" },
-  ].filter((d) => d.value > 0);
+// --- Main Component ---
 
-  const totalPie = pieData.reduce((s, d) => s + d.value, 0);
+export function DashboardCharts({ stats }: { stats: DashboardStats }) {
+  const { totalUsers, activeSubscriptions, monthlySubscriptions, yearlySubscriptions } = stats.stats;
+
+  const lineData = useMemo(() => generateLineData(stats.stats), [stats.stats]);
+
+  const pieData = useMemo<PieDataItem[]>(() => {
+    const freeCount = Math.max(0, totalUsers - activeSubscriptions);
+    return [
+      { name: "Monthly Pro", value: monthlySubscriptions, color: COLORS.monthly },
+      { name: "Annual Elite", value: yearlySubscriptions, color: COLORS.yearly },
+      { name: "Free Tier", value: freeCount, color: COLORS.free },
+    ].filter(d => d.value > 0);
+  }, [totalUsers, activeSubscriptions, monthlySubscriptions, yearlySubscriptions]);
+
+  const totalPieValue = useMemo(() => pieData.reduce((acc, curr) => acc + curr.value, 0), [pieData]);
 
   return (
-    <div className="space-y-6">
-
-      {/* ── Row 1: line chart + top-rated + pie ─────────────────────────── */}
+    <div className="space-y-6 animate-in fade-in duration-700">
+      
+      {/* Platform Chart Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Line chart */}
-        <Card className="lg:col-span-2 border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Platform Overview</h2>
-              <span className="text-xs text-muted-foreground">Last 7 days (projected)</span>
-            </div>
+        <Card className="lg:col-span-2 border-border/40 shadow-sm overflow-hidden">
+          <CardHeader className="bg-muted/5 py-4 border-b">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <FiActivity className="text-primary" /> Platform Insights
+            </CardTitle>
+            <CardDescription className="text-[10px] uppercase font-black tracking-widest opacity-70">
+              Active Users vs Content Engagement
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={lineData} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "hsl(var(--foreground))" }} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" iconSize={8} />
-                <Line type="monotone" dataKey="Users"         stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="Reviews"       stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="Subscriptions" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="pt-6">
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "gray" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "gray" }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: 10, fontWeight: 700, paddingBottom: 15 }} />
+                  <Line type="monotone" dataKey="Users" stroke={COLORS.users} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Reviews" stroke={COLORS.reviews} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Subscriptions" stroke={COLORS.subs} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Right column: top-rated + pie stacked */}
-        <div className="space-y-6">
-
-          {/* Top rated media */}
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-sm">Top Rated Media</h2>
-                <Link href="/admin/movies" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                  View all <FiArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-1 px-4 pb-4">
-              {stats.topRatedMedia.length ? (
-                stats.topRatedMedia.slice(0, 5).map((media: TopRatedMedia, i) => (
-                  <div key={media.id} className="flex items-center gap-2.5 py-1.5 border-b border-border/20 last:border-0">
-                    <span className="text-xs font-bold text-muted-foreground w-4 shrink-0">#{i + 1}</span>
-                    {media.posterUrl ? (
-                      <div className="relative w-8 h-11 shrink-0 rounded overflow-hidden">
-                        <Image src={media.posterUrl} alt={media.title} fill className="object-cover" sizes="32px" />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-11 shrink-0 rounded bg-muted flex items-center justify-center">
-                        <FiStar className="w-3 h-3 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{media.title}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <FiStar className="w-2.5 h-2.5 text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-400">
-                          {media.averageRating.toFixed(1)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">/ 10</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground py-2">No media yet</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Subscription breakdown pie */}
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <h2 className="font-semibold text-sm">Subscribers by Plan</h2>
-            </CardHeader>
-            <CardContent className="pb-4">
-              {totalPie > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height={150}>
-                    <PieChart>
-                      <Pie
-                        data={pieData.map((d) => ({ ...d, fill: d.color }))}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={42}
-                        outerRadius={65}
-                        paddingAngle={3}
-                        dataKey="value"
-                      />
-                      <Tooltip contentStyle={TOOLTIP_STYLE} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-1.5 mt-1">
-                    {pieData.map((entry) => (
-                      <div key={entry.name} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: entry.color }} />
-                          <span className="text-muted-foreground">{entry.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold">{entry.value.toLocaleString()}</span>
-                          <span className="text-muted-foreground">
-                            {totalPie > 0 ? `${Math.round((entry.value / totalPie) * 100)}%` : "0%"}
-                          </span>
-                        </div>
-                      </div>
+        {/* Pie Chart Card */}
+        <Card className="border-border/40 shadow-sm">
+          <CardHeader className="bg-muted/5 py-4 border-b">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <FiUsers className="text-primary" /> Segment Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-6">
+            <div className="h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                     ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 space-y-2">
+              {pieData.map((item) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-[11px] font-bold text-muted-foreground">{item.name}</span>
                   </div>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">No subscription data yet</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  <span className="text-[11px] font-mono font-bold">
+                    {((item.value / totalPieValue) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* ── Row 2: Recent reviews table ─────────────────────────────────── */}
-      <Card className="border-border/50">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Recent Reviews</h2>
-            <Link href="/admin/reviews" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-              View all <FiArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+      {/* Recent Reviews Table */}
+      <Card className="border-border/40 shadow-sm overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/5">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <FiMessageSquare className="text-primary" /> Activity Log
+          </CardTitle>
+          <Button variant="outline" size="sm" asChild className="h-7 text-[10px] font-bold">
+            <Link href="/admin/reviews">Management Suite</Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
-          {stats.recentReviews.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/40 bg-muted/20">
-                    <th className="text-left text-xs text-muted-foreground font-medium px-5 py-3">User</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Media</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Rating</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3 hidden md:table-cell">Review</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Status</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3 pr-5 hidden sm:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.recentReviews.map((review: RecentReview) => (
-                    <tr key={review.id} className="border-b border-border/20 last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="w-7 h-7 shrink-0">
-                            <AvatarImage src={review.user.image ?? undefined} alt={review.user.name} />
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {review.user.name.charAt(0).toUpperCase()}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/20 border-b">
+                  <th className="text-left text-[10px] font-black uppercase px-6 py-3 text-muted-foreground">User</th>
+                  <th className="text-left text-[10px] font-black uppercase px-4 py-3 text-muted-foreground">Media</th>
+                  <th className="text-left text-[10px] font-black uppercase px-4 py-3 text-muted-foreground">Sentiment</th>
+                  <th className="text-left text-[10px] font-black uppercase px-4 py-3 text-muted-foreground">Status</th>
+                  <th className="text-right text-[10px] font-black uppercase px-6 py-3 text-muted-foreground">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {stats.recentReviews.map((review) => {
+                  const statusStyle = getStatusConfig(review.status);
+                  return (
+                    <tr key={review.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-7 w-7">
+                            <AvatarImage src={review.user.image ?? undefined} />
+                            <AvatarFallback className="text-[10px] font-bold">
+                              {review.user.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium truncate">{review.user.name}</p>
-                            <p className="text-xs text-muted-foreground truncate hidden sm:block">{review.user.email}</p>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold">{review.user.name}</span>
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{review.user.email}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          {review.media?.posterUrl && (
-                            <div className="relative w-6 h-9 shrink-0 rounded overflow-hidden">
-                              <Image src={review.media.posterUrl} alt={review.media.title ?? ""} fill className="object-cover" sizes="24px" />
-                            </div>
-                          )}
-                          <span className="text-xs truncate max-w-22.5">{review.media?.title ?? "—"}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <FiStar className="w-3 h-3 text-amber-400" />
-                          <span className="text-xs font-semibold">{review.rating}</span>
-                          <span className="text-xs text-muted-foreground">/5</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 hidden md:table-cell max-w-45">
-                        <p className="text-xs text-muted-foreground truncate">{review.content}</p>
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadgeClass(review.status)}`}>
-                          {review.status}
+                      <td className="px-4 py-4">
+                        <span className="text-xs font-semibold truncate block max-w-[150px]">
+                          {review.media?.title || "N/A"}
                         </span>
                       </td>
-                      <td className="px-3 py-3 pr-5 hidden sm:table-cell whitespace-nowrap">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1">
+                          <FiStar className="h-3 w-3 text-amber-500 fill-amber-500" />
+                          <span className="text-xs font-black">{review.rating}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge variant="outline" className={cn("text-[9px] font-bold px-2", statusStyle.color)}>
+                          {statusStyle.label}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {new Date(review.createdAt).toLocaleDateString()}
                         </span>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground px-5 py-6">No reviews yet</p>
-          )}
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>
