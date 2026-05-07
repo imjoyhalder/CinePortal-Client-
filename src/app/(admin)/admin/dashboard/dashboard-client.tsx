@@ -85,8 +85,8 @@ export default function AdminDashboardClient() {
           </div>
           <div className="h-9 w-44 bg-muted rounded-lg animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+          {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="h-28 bg-card border border-border/50 rounded-xl animate-pulse" />
           ))}
         </div>
@@ -117,8 +117,8 @@ export default function AdminDashboardClient() {
         </div>
       </div>
 
-      {/* Stat cards — 6 across: 5 count cards + 1 revenue card */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* Stat cards — 5 count cards + 2 revenue cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         {STAT_CARDS.map(({ key, label, icon: Icon, iconColor, iconBg }) => (
           <Card key={key} className="border-border/50">
             <CardContent className="pt-4 pb-3">
@@ -133,7 +133,7 @@ export default function AdminDashboardClient() {
           </Card>
         ))}
 
-        {/* Revenue card */}
+        {/* MRR card */}
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-3">
             <div className="inline-flex p-2 rounded-lg bg-primary/15 mb-3">
@@ -142,12 +142,26 @@ export default function AdminDashboardClient() {
             <p className="text-2xl font-bold leading-none text-primary">
               ${(s?.estimatedMRR ?? 0).toFixed(0)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Est. Monthly Revenue</p>
+            <p className="text-xs text-muted-foreground mt-1">Est. MRR</p>
             {s && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 {s.monthlySubscriptions}mo · {s.yearlySubscriptions}yr
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* ARR card */}
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardContent className="pt-4 pb-3">
+            <div className="inline-flex p-2 rounded-lg bg-emerald-500/15 mb-3">
+              <FiTrendingUp className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold leading-none text-emerald-500">
+              ${(s?.estimatedARR ?? 0).toFixed(0)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Est. ARR</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Annual revenue</p>
           </CardContent>
         </Card>
       </div>
