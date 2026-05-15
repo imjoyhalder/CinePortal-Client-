@@ -350,6 +350,7 @@ export default function AdminUsersClient() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={user.image ?? undefined} alt={user.name} />
                           <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                             {user.name.charAt(0).toUpperCase()}
                           </AvatarFallback>

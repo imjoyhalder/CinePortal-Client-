@@ -94,10 +94,13 @@ function PaginationBar({ page, totalPages, onChange }: { page: number; totalPage
 
 const LIMIT = 20;
 
+interface SummaryStats { monthly: number; yearly: number; cancelling: number }
+
 export default function AdminSubscriptionsClient() {
   const [subs, setSubs]       = useState<AdminSubscription[]>([]);
   const [total, setTotal]     = useState(0);
   const [page, setPage]       = useState(1);
+  const [summary, setSummary] = useState<SummaryStats | null>(null);
 
   const [search, setSearch]           = useState("");
   const [debouncedSearch, setDebounced] = useState("");
@@ -114,6 +117,21 @@ export default function AdminSubscriptionsClient() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Fetch global summary counts once — independent of table filters/loading
+  useEffect(() => {
+    api.get<ApiResponse<{ stats: { monthlySubscriptions: number; yearlySubscriptions: number } }>>("/admin/dashboard")
+      .then((res) => {
+        const stats = res.data?.stats;
+        if (!stats) return;
+        setSummary((prev) => ({
+          monthly: stats.monthlySubscriptions,
+          yearly: stats.yearlySubscriptions,
+          cancelling: prev?.cancelling ?? 0,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
@@ -124,9 +142,17 @@ export default function AdminSubscriptionsClient() {
     api.get<ApiResponse<AdminSubscription[]>>(`/admin/subscriptions?${params}`)
       .then((res) => {
         if (cancelled) return;
-        setSubs(res.data ?? []);
+        const data = res.data ?? [];
+        setSubs(data);
         setTotal(res.meta?.total ?? 0);
         setLoadedKey(requestKey);
+        // Update cancelling count from ACTIVE page results
+        if (statusFilter === "ACTIVE") {
+          setSummary((prev) => prev
+            ? { ...prev, cancelling: data.filter((s) => s.cancelAtPeriodEnd).length }
+            : null
+          );
+        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -141,12 +167,6 @@ export default function AdminSubscriptionsClient() {
   const startIndex = (page - 1) * LIMIT;
   const hasFilters = search || statusFilter !== "ACTIVE" || planFilter !== "ALL";
 
-  const mrr = subs.reduce((sum, s) => {
-    if (s.plan === "MONTHLY") return sum + 9.99;
-    if (s.plan === "YEARLY")  return sum + 79.99 / 12;
-    return sum;
-  }, 0);
-
   function clearFilters() {
     setSearch(""); setStatusFilter("ACTIVE"); setPlanFilter("ALL"); setPage(1);
   }
@@ -160,49 +180,53 @@ export default function AdminSubscriptionsClient() {
           <h1 className="text-2xl font-bold">Subscriptions</h1>
           <p className="text-sm text-muted-foreground">{total.toLocaleString()} total</p>
         </div>
-        {statusFilter === "ACTIVE" && !loading && subs.length > 0 && (
+        {summary !== null && (
           <div className="flex items-center gap-1.5 text-sm font-semibold text-primary bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 w-fit">
             <FiDollarSign className="w-4 h-4" />
-            ${mrr.toFixed(0)} est. MRR
+            ${(summary.monthly * 9.99 + summary.yearly * (79.99 / 12)).toFixed(0)} est. MRR
           </div>
         )}
       </div>
 
-      {/* Summary cards — active plan breakdown */}
-      {statusFilter === "ACTIVE" && !loading && subs.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Card className="border-green-500/20 bg-green-500/5">
-            <CardContent className="pt-4 pb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <MdVerified className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-muted-foreground">Monthly Pro</span>
-              </div>
-              <p className="text-2xl font-bold">{subs.filter((s) => s.plan === "MONTHLY").length}</p>
-              <p className="text-xs text-green-600 mt-0.5">$9.99 / month each</p>
-            </CardContent>
-          </Card>
-          <Card className="border-purple-500/20 bg-purple-500/5">
-            <CardContent className="pt-4 pb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <MdVerified className="w-4 h-4 text-purple-500" />
-                <span className="text-xs text-muted-foreground">Annual Premium</span>
-              </div>
-              <p className="text-2xl font-bold">{subs.filter((s) => s.plan === "YEARLY").length}</p>
-              <p className="text-xs text-purple-600 mt-0.5">$79.99 / year each</p>
-            </CardContent>
-          </Card>
-          <Card className="border-amber-500/20 bg-amber-500/5 col-span-2 sm:col-span-1">
-            <CardContent className="pt-4 pb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <FiAlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-xs text-muted-foreground">Cancelling</span>
-              </div>
-              <p className="text-2xl font-bold">{subs.filter((s) => s.cancelAtPeriodEnd).length}</p>
-              <p className="text-xs text-amber-600 mt-0.5">at period end</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Summary cards — always visible, sourced independently of table filter/loading */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Card className="border-green-500/20 bg-green-500/5">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <MdVerified className="w-4 h-4 text-green-500" />
+              <span className="text-xs text-muted-foreground">Monthly Pro</span>
+            </div>
+            {summary === null
+              ? <Skeleton className="h-8 w-12 mt-1" />
+              : <p className="text-2xl font-bold">{summary.monthly}</p>}
+            <p className="text-xs text-green-600 mt-0.5">$9.99 / month each</p>
+          </CardContent>
+        </Card>
+        <Card className="border-purple-500/20 bg-purple-500/5">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <MdVerified className="w-4 h-4 text-purple-500" />
+              <span className="text-xs text-muted-foreground">Annual Premium</span>
+            </div>
+            {summary === null
+              ? <Skeleton className="h-8 w-12 mt-1" />
+              : <p className="text-2xl font-bold">{summary.yearly}</p>}
+            <p className="text-xs text-purple-600 mt-0.5">$79.99 / year each</p>
+          </CardContent>
+        </Card>
+        <Card className="border-amber-500/20 bg-amber-500/5 col-span-2 sm:col-span-1">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <FiAlertCircle className="w-4 h-4 text-amber-500" />
+              <span className="text-xs text-muted-foreground">Cancelling</span>
+            </div>
+            {summary === null
+              ? <Skeleton className="h-8 w-12 mt-1" />
+              : <p className="text-2xl font-bold">{summary.cancelling}</p>}
+            <p className="text-xs text-amber-600 mt-0.5">at period end</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
