@@ -5,12 +5,11 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  FiSearch, FiMenu, FiX, FiUser, FiLogOut,
+  FiSearch, FiMenu, FiX, FiLogOut,
   FiList, FiSettings, FiGrid, FiHelpCircle, FiChevronDown
 } from "react-icons/fi";
 import { buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -80,7 +79,6 @@ function NavLinksFallback({ mobile }: { mobile?: boolean }) {
 
 export default function Navbar() {
   const { data: session } = useSession();
-  const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,7 +108,14 @@ export default function Navbar() {
     window.location.href = "/";
   }
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
   return (
+    <>
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300 border-b",
@@ -134,7 +139,7 @@ export default function Navbar() {
                 priority
               />
             </div>
-            <span className="font-bold text-xl tracking-tight hidden lg:block bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <span className="font-bold text-xl tracking-tight hidden lg:block bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
               CinePortal
             </span>
           </Link>
@@ -203,7 +208,7 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <Link href="/sign-in" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-full")}>
                   Log in
                 </Link>
@@ -223,8 +228,10 @@ export default function Navbar() {
         </div>
       </div>
 
+    </header>
+
       {mobileOpen && (
-        <div className="fixed inset-x-0 top-[65px] bottom-0 z-50 bg-background md:hidden overflow-y-auto animate-in slide-in-from-top duration-300">
+        <div className="fixed inset-x-0 top-0 bottom-0 z-40 bg-background md:hidden overflow-y-auto pt-16.25">
           <div className="p-6 flex flex-col gap-4">
             <form onSubmit={handleSearch} className="relative mb-4">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -272,6 +279,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
