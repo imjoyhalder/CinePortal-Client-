@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ApiResponse, User } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -83,9 +84,24 @@ function PaginationBar({ page, totalPages, onChange }: { page: number; totalPage
 
 const LIMIT = 20;
 
+interface ConfirmState {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  variant: "destructive" | "default";
+  onConfirm: () => Promise<void>;
+}
+
+const CONFIRM_CLOSED: ConfirmState = {
+  open: false, title: "", description: "", confirmLabel: "Confirm", variant: "destructive", onConfirm: async () => {},
+};
+
 export default function AdminUsersClient() {
   const [users, setUsers]     = useState<User[]>([]);
   const [meta, setMeta]       = useState<UsersMeta | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState>(CONFIRM_CLOSED);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const [page, setPage]           = useState(1);
   const [search, setSearch]       = useState("");
@@ -136,37 +152,66 @@ export default function AdminUsersClient() {
     setPage(1);
   }
 
-  async function toggleRole(user: User) {
+  function runConfirm(state: Omit<ConfirmState, "open">) {
+    setConfirmState({ ...state, open: true });
+  }
+
+  async function executeConfirm() {
+    setConfirmLoading(true);
+    try {
+      await confirmState.onConfirm();
+      setConfirmState(CONFIRM_CLOSED);
+    } finally {
+      setConfirmLoading(false);
+    }
+  }
+
+  function promptToggleRole(user: User) {
     const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-    try {
-      await api.patch(`/admin/users/${user.id}/role`, { role: newRole });
-      setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, role: newRole } : u));
-      toast.success(`${user.name} is now ${newRole}`);
-    } catch {
-      toast.error("Failed to update role");
-    }
+    runConfirm({
+      title: newRole === "ADMIN" ? "Make Admin" : "Remove Admin",
+      description: newRole === "ADMIN"
+        ? `Grant admin access to ${user.name}? They will have full control over the platform.`
+        : `Remove admin access from ${user.name}? They will revert to a regular user.`,
+      confirmLabel: newRole === "ADMIN" ? "Make Admin" : "Remove Admin",
+      variant: newRole === "ADMIN" ? "default" : "destructive",
+      onConfirm: async () => {
+        await api.patch(`/admin/users/${user.id}/role`, { role: newRole });
+        setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, role: newRole } : u));
+        toast.success(`${user.name} is now ${newRole}`);
+      },
+    });
   }
 
-  async function toggleBan(user: User) {
+  function promptToggleBan(user: User) {
     const banned = !user.banned;
-    try {
-      await api.patch(`/admin/users/${user.id}/ban`, { banned });
-      setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, banned } : u));
-      toast.success(`${user.name} has been ${banned ? "banned" : "unbanned"}`);
-    } catch {
-      toast.error("Failed to update ban status");
-    }
+    runConfirm({
+      title: banned ? "Ban User" : "Unban User",
+      description: banned
+        ? `Ban ${user.name}? They will be blocked from accessing the platform.`
+        : `Unban ${user.name}? They will regain access to the platform.`,
+      confirmLabel: banned ? "Ban User" : "Unban User",
+      variant: banned ? "destructive" : "default",
+      onConfirm: async () => {
+        await api.patch(`/admin/users/${user.id}/ban`, { banned });
+        setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, banned } : u));
+        toast.success(`${user.name} has been ${banned ? "banned" : "unbanned"}`);
+      },
+    });
   }
 
-  async function deleteUser(user: User) {
-    if (!confirm(`Permanently delete "${user.name}" (${user.email})? This cannot be undone.`)) return;
-    try {
-      await api.delete(`/admin/users/${user.id}`);
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      toast.success(`${user.name} deleted`);
-    } catch {
-      toast.error("Failed to delete user");
-    }
+  function promptDeleteUser(user: User) {
+    runConfirm({
+      title: "Delete User",
+      description: `Permanently delete "${user.name}" (${user.email})? All their reviews, comments and data will be removed. This cannot be undone.`,
+      confirmLabel: "Delete User",
+      variant: "destructive",
+      onConfirm: async () => {
+        await api.delete(`/admin/users/${user.id}`);
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        toast.success(`${user.name} deleted`);
+      },
+    });
   }
 
   const summary = meta?.summary;
@@ -376,7 +421,7 @@ export default function AdminUsersClient() {
                           variant="ghost"
                           className="w-8 h-8 text-muted-foreground hover:text-foreground"
                           title={user.role === "ADMIN" ? "Demote to User" : "Make Admin"}
-                          onClick={() => toggleRole(user)}
+                          onClick={() => promptToggleRole(user)}
                         >
                           {user.role === "ADMIN"
                             ? <FiUser className="w-3.5 h-3.5" />
@@ -389,7 +434,7 @@ export default function AdminUsersClient() {
                           variant="ghost"
                           className={`w-8 h-8 ${user.banned ? "text-green-600 hover:text-green-700 hover:bg-green-500/10" : "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"}`}
                           title={user.banned ? "Unban user" : "Ban user"}
-                          onClick={() => toggleBan(user)}
+                          onClick={() => promptToggleBan(user)}
                         >
                           {user.banned
                             ? <FiCheckCircle className="w-3.5 h-3.5" />
@@ -402,7 +447,7 @@ export default function AdminUsersClient() {
                           variant="ghost"
                           className="w-8 h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           title="Delete user"
-                          onClick={() => deleteUser(user)}
+                          onClick={() => promptDeleteUser(user)}
                         >
                           <FiTrash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -425,6 +470,17 @@ export default function AdminUsersClient() {
           <PaginationBar page={page} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => !confirmLoading && setConfirmState((s) => ({ ...s, open }))}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmLabel={confirmState.confirmLabel}
+        variant={confirmState.variant}
+        loading={confirmLoading}
+        onConfirm={executeConfirm}
+      />
     </div>
   );
 }

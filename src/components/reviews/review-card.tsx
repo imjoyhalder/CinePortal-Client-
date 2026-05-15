@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Review } from "@/types";
 
 interface ReviewCardProps {
@@ -34,13 +35,14 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function handleDelete() {
-    if (!confirm("Delete this review? This cannot be undone.")) return;
     setDeleting(true);
     try {
       await api.delete(`/reviews/${review.id}`);
       toast.success("Review deleted");
+      setConfirmDelete(false);
       onDeleted?.();
     } catch {
       toast.error("Failed to delete review");
@@ -156,7 +158,7 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
                 </Button>
               )}
               {onDeleted && (
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDelete(true)} disabled={deleting}>
                   <FiTrash2 className="w-3 h-3" /> {deleting ? "…" : "Delete"}
                 </Button>
               )}
@@ -165,6 +167,16 @@ export default function ReviewCard({ review, showMedia = false, onDeleted, onEdi
         </div>
         <CommentsSection reviewId={review.id} pricing={review.media?.pricing} />
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={(open) => { if (!deleting) setConfirmDelete(open); }}
+        title="Delete Review"
+        description="Permanently delete this review? This cannot be undone."
+        confirmLabel="Delete Review"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </Card>
   );
 }

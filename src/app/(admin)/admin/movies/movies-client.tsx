@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ApiResponse, Media } from "@/types";
 import AdminMovieForm from "@/components/admin/admin-movie-form";
 
@@ -117,6 +118,8 @@ export default function AdminMoviesClient() {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<Media | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Media | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -172,14 +175,18 @@ export default function AdminMoviesClient() {
     }
   }
 
-  async function deleteMovie(movie: Media) {
-    if (!confirm(`Delete "${movie.title}"? This cannot be undone.`)) return;
+  async function confirmDeleteMovie() {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/movies/${movie.id}`);
-      toast.success("Media deleted");
+      await api.delete(`/movies/${pendingDelete.id}`);
+      toast.success(`"${pendingDelete.title}" deleted`);
+      setPendingDelete(null);
       loadMovies();
     } catch {
       toast.error("Failed to delete");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -424,7 +431,7 @@ export default function AdminMoviesClient() {
                           variant="ghost"
                           className="w-8 h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           title="Delete"
-                          onClick={() => deleteMovie(movie)}
+                          onClick={() => setPendingDelete(movie)}
                         >
                           <FiTrash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -447,6 +454,16 @@ export default function AdminMoviesClient() {
           <PaginationBar page={page} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => { if (!open && !deleting) setPendingDelete(null); }}
+        title="Delete Movie"
+        description={`Permanently delete "${pendingDelete?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={confirmDeleteMovie}
+      />
     </div>
   );
 }

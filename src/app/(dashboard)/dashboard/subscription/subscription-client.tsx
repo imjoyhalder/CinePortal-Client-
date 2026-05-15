@@ -15,6 +15,7 @@ import CheckoutButton from "@/components/payment/checkout-button";
 import { useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ApiResponse, User, Subscription } from "@/types";
 
 const PLAN_LABEL: Record<string, string> = {
@@ -54,6 +55,7 @@ export default function DashboardSubscriptionClient() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [cancelling,   setCancelling]   = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) { router.push("/sign-in"); return; }
@@ -72,12 +74,12 @@ export default function DashboardSubscriptionClient() {
   }, [session, isPending, router]);
 
   async function handleCancel() {
-    if (!confirm("Cancel your subscription? You keep access until the end of the billing period.")) return;
     setCancelling(true);
     try {
       await api.post("/payments/subscription/cancel");
       toast.success("Subscription will cancel at the end of the billing period.");
       setSubscription((prev) => prev ? { ...prev, cancelAtPeriodEnd: true } : prev);
+      setCancelConfirm(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to cancel");
     } finally {
@@ -282,7 +284,7 @@ export default function DashboardSubscriptionClient() {
                 variant="outline"
                 size="sm"
                 className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/60 gap-2"
-                onClick={handleCancel}
+                onClick={() => setCancelConfirm(true)}
                 disabled={cancelling}
               >
                 {cancelling && <FiLoader className="w-3.5 h-3.5 animate-spin" />}
@@ -359,6 +361,15 @@ export default function DashboardSubscriptionClient() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={cancelConfirm}
+        onOpenChange={(open) => { if (!cancelling) setCancelConfirm(open); }}
+        title="Cancel Subscription"
+        description="Are you sure you want to cancel? You'll keep full access until the end of your current billing period."
+        confirmLabel="Yes, Cancel"
+        loading={cancelling}
+        onConfirm={handleCancel}
+      />
     </div>
   );
 }
