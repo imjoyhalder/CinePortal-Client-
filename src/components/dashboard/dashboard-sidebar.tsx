@@ -160,7 +160,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   FiFilm,
   FiGrid,
@@ -243,7 +243,6 @@ const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 const SidebarUser = () => {
   const { data: session } = useSession();
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   
   if (!session?.user) return null;
@@ -253,8 +252,7 @@ const SidebarUser = () => {
     setIsLoading(true);
     try {
       await signOut();
-      toast.success("Signed out successfully");
-      router.push("/");
+      window.location.href = "/";
     } catch (error) {
       toast.error("Failed to sign out");
       setIsLoading(false);

@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   const SESSION_COOKIE = "better-auth.session_token";
   const hasSession = !!request.cookies.get(SESSION_COOKIE)?.value;
 
-  const PROTECTED_ROUTES = ["/dashboard", "/profile", "/settings", "/watchlist"];
+  const PROTECTED_ROUTES = ["/dashboard", "/admin", "/profile", "/settings", "/watchlist"];
   const AUTH_ROUTES = ["/sign-in", "/sign-up"];
 
   // Handle Protected Routes
