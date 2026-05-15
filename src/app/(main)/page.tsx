@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import HeroSection from "@/components/home/hero-section";
 import FeatureStrip from "@/components/home/feature-strip";
 import TrendingSection from "@/components/home/trending-section";
-import FeaturedSection from "@/components/home/featured-section";
+import HowItWorks from "@/components/home/how-it-works";
 import StatsSection from "@/components/home/stats-section";
-import PricingSection from "@/components/home/pricing-section";
+import PricingCta from "@/components/home/pricing-cta";
 import type { ApiResponse, FeaturedResponse } from "@/types";
 
 export const revalidate = 300;
@@ -34,20 +34,32 @@ export default async function HomePage() {
   const topRated = featured?.topRated ?? [];
   const newlyAdded = featured?.newlyAdded ?? [];
 
-  // First 6 poster URLs from the combined list — passed to the hero grid
   const heroPosters = [...topRated, ...newlyAdded]
     .slice(0, 6)
     .map((m) => m.posterUrl);
 
   return (
     <>
+      {/* 1. Immediate impact — headline + search + poster grid */}
       <HeroSection posters={heroPosters} />
+
+      {/* 2. What can I do here? — quick feature icons */}
       <FeatureStrip />
+
+      {/* 3. Show real content immediately — builds desire */}
       <TrendingSection movies={topRated} title="Trending This Week" />
-      <TrendingSection movies={newlyAdded} title="Newly Added" />
-      <FeaturedSection topRated={topRated} newlyAdded={newlyAdded} />
+
+      {/* 4. How do I get started? — 3-step explainer */}
+      <HowItWorks />
+
+      {/* 5. Is this legit? — bold social proof numbers */}
       <StatsSection />
-      <PricingSection />
+
+      {/* 6. More content to browse */}
+      <TrendingSection movies={newlyAdded} title="Newly Added" />
+
+      {/* 7. Real reviews + plan cards — final conversion */}
+      <PricingCta />
     </>
   );
 }

@@ -116,7 +116,7 @@ export default function ContactClient() {
   }
 
   return (
-    <div className="min-h-screen py-16">
+    <div className="min-h-screen py-10">
       <div className="container mx-auto px-4 max-w-5xl">
 
         {/* Header */}

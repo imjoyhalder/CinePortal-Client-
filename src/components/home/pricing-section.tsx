@@ -113,7 +113,7 @@ export default function PricingSection() {
     subscription?.status === "ACTIVE" ? (subscription.plan as SubscriptionPlan) : "FREE";
 
   return (
-    <section id="pricing" className="py-24 relative overflow-hidden bg-background">
+    <section id="pricing" className="py-14 relative overflow-hidden bg-background">
       {/* Background glows */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/6 blur-[140px] rounded-full" />

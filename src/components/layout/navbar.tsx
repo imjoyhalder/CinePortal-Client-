@@ -23,7 +23,8 @@ import Image from "next/image";
 
 const navLinks = [
   { href: "/", label: "Home", exact: true },
-  { href: "/movies?type=MOVIE", label: "Movies", match: "/movies", queryKey: "type", queryVal: "MOVIE" },
+  { href: "/movies", label: "Movies", match: "/movies", queryKey: "type", queryVal: "MOVIE" },
+  { href: "/pricing", label: "Pricing", match: "/pricing" },
   { href: "/contact", label: "Contact Us", match: "/contact" },
   { href: "/faq", label: "FAQ", match: "/faq" },
   { href: "/about", label: "About", match: "/about" },

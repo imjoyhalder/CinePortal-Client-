@@ -123,7 +123,7 @@ export default function FAQClient() {
   }, [search]);
 
   return (
-    <div className="relative min-h-screen py-20 overflow-hidden">
+    <div className="relative min-h-screen py-10 overflow-hidden">
       <div className="container mx-auto px-4 max-w-4xl">
 
         {/* Header */}

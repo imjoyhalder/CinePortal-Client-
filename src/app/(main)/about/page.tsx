@@ -53,7 +53,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative py-24 overflow-hidden">
+      <section className="relative py-14 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background pointer-events-none" />
         <div className="container mx-auto px-4 text-center relative">
           <div className="inline-flex items-center gap-2 border border-primary/30 rounded-full px-4 py-1.5 text-sm text-primary font-medium mb-6">
@@ -75,7 +75,7 @@ export default function AboutPage() {
       </section>
 
       {/* Stats */}
-      <section className="py-16 border-y border-border/30">
+      <section className="py-10 border-y border-border/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {STATS.map(({ value, label }) => (
@@ -89,7 +89,7 @@ export default function AboutPage() {
       </section>
 
       {/* Our story */}
-      <section className="py-20">
+      <section className="py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -128,7 +128,7 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="py-20 bg-card/30 border-y border-border/30">
+      <section className="py-12 bg-card/30 border-y border-border/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3">What we stand for</h2>
@@ -151,7 +151,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team */}
-      <section className="py-20">
+      <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3">Meet the team</h2>
@@ -172,7 +172,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 border-t border-border/30">
+      <section className="py-12 border-t border-border/30">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Join our community</h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">

@@ -50,7 +50,7 @@ export default function WatchlistClient() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div className="container mx-auto px-4 py-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <FiBookmark className="text-primary" /> My Watchlist

@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  FiArrowLeft, FiLoader, FiFilm, FiUsers, FiMonitor,
+  FiArrowLeft, FiLoader, FiFilm, FiUsers, FiMonitor, FiTv,
   FiLink, FiUploadCloud, FiX, FiEye, FiEyeOff,
-  FiInfo, FiStar, FiTag,
+  FiInfo, FiStar, FiTag, FiUnlock,
 } from "react-icons/fi";
 import { MdMovieCreation } from "react-icons/md";
 import { Button } from "@/components/ui/button";
@@ -183,13 +183,13 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
                       key={t}
                       type="button"
                       onClick={() => setValue("type", t)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
                         typeValue === t
                           ? "bg-primary text-primary-foreground border-primary"
                           : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
                       }`}
                     >
-                      {t === "MOVIE" ? "🎬 Movie" : "📺 Series"}
+                      {t === "MOVIE" ? <><FiFilm className="w-3.5 h-3.5" /> Movie</> : <><FiTv className="w-3.5 h-3.5" /> Series</>}
                     </button>
                   ))}
                 </div>
@@ -204,7 +204,7 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
                       key={p}
                       type="button"
                       onClick={() => setValue("pricing", p)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
                         priceValue === p
                           ? p === "premium"
                             ? "bg-amber-500 text-white border-amber-500"
@@ -212,7 +212,7 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
                           : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
                       }`}
                     >
-                      {p === "free" ? "🆓 Free" : "⭐ Premium"}
+                      {p === "free" ? <><FiUnlock className="w-3.5 h-3.5" /> Free</> : <><FiStar className="w-3.5 h-3.5" /> Premium</>}
                     </button>
                   ))}
                 </div>

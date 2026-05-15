@@ -67,7 +67,7 @@ export default function HeroSection({ posters = [] }: HeroSectionProps) {
   }
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-background py-2 lg:py-2">
+    <section className="relative min-h-[80vh] flex items-center overflow-hidden bg-background py-2 lg:py-2">
       {/* Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />

@@ -128,7 +128,7 @@ export default function MoviesClient({
     }`;
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-10">
+    <div className="container mx-auto px-4 py-5 md:py-6">
 
       {/* Heading */}
       <div className="mb-6">

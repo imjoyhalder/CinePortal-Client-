@@ -22,7 +22,7 @@ export default function TrendingSection({ movies, title }: TrendingSectionProps)
   if (!movies.length) return null;
 
   return (
-    <section className="py-12">
+    <section className="py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
