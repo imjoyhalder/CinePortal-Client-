@@ -85,7 +85,7 @@ function SidebarLogo() {
   return (
     <div className="p-5 border-b border-sidebar-border">
       <Link href="/" className="flex items-center gap-2 font-bold text-base">
-        <Image src="/powersync.svg" alt="Logo" width={22} height={22} className="h-auto w-auto shrink-0" />
+        <Image src="/powersync.svg" alt="Logo" width={28} height={28} className="shrink-0" style={{ width: 22, height: 22 }} />
         <span className="text-gradient">CinePortal</span>
       </Link>
       <p className="text-xs text-muted-foreground mt-0.5">Admin Panel</p>
@@ -125,7 +125,7 @@ export function MobileAdminNav() {
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <div className="p-5">
             <Link href="/" className="flex items-center gap-2 font-bold text-base">
-              <Image src="/powersync.svg" alt="Logo" width={22} height={22} className="h-auto w-auto shrink-0" />
+              <Image src="/powersync.svg" alt="Logo" width={22} height={22} className="shrink-0" style={{ width: 22, height: 22 }} />
               <span className="text-gradient">CinePortal</span>
             </Link>
             <p className="text-xs text-muted-foreground mt-0.5">Admin Panel</p>

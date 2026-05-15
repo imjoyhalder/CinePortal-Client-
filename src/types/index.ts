@@ -61,6 +61,7 @@ export interface User {
   email: string;
   image: string | null;
   role: Role;
+  banned?: boolean;
   emailVerified: boolean;
   createdAt: string;
   subscription?: Subscription | null;

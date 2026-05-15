@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
   FiPlus, FiEdit2, FiTrash2, FiEye, FiEyeOff,
-  FiSearch, FiChevronUp, FiChevronDown,
+  FiSearch, FiChevronUp, FiChevronDown, FiX,
 } from "react-icons/fi";
 import { MdMovieCreation } from "react-icons/md";
 import { Badge } from "@/components/ui/badge";
@@ -260,6 +260,17 @@ export default function AdminMoviesClient() {
             <option key={l} value={l}>{l} / page</option>
           ))}
         </select>
+
+        {(search || typeFilter !== "ALL" || pricingFilter !== "ALL" || statusFilter !== "ALL") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={() => { setSearch(""); setTypeFilter("ALL"); setPricingFilter("ALL"); setStatusFilter("ALL"); setPage(1); }}
+          >
+            <FiX className="w-3.5 h-3.5" /> Clear
+          </Button>
+        )}
       </div>
 
       {/* Table */}

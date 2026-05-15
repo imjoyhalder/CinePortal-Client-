@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiShoppingBag, FiCreditCard, FiCalendar, FiCheckCircle,
-  FiClock, FiAlertCircle, FiArrowRight, FiPackage,
+  FiClock, FiAlertCircle, FiArrowRight, FiPackage, FiFileText,
 } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
 import { Badge } from "@/components/ui/badge";
@@ -184,10 +184,15 @@ export default function PurchasesClient() {
                   </Badge>
                 </div>
               </div>
-              <div className="px-6 py-3 bg-muted/20 flex items-center justify-between">
+              <div className="px-6 py-3 bg-muted/20 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground">
-                  Full payment receipts are sent to <span className="font-semibold text-foreground">{profile?.email}</span>
+                  Receipts are sent to <span className="font-semibold text-foreground">{profile?.email}</span>
                 </p>
+                <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" asChild>
+                  <Link href="/dashboard/purchases/invoice">
+                    <FiFileText className="w-3.5 h-3.5" /> View Invoice
+                  </Link>
+                </Button>
               </div>
             </div>
           ) : (

@@ -3,18 +3,19 @@
 import { useState, useEffect } from "react";
 import {
   FiCheckCircle, FiXCircle, FiAlertCircle, FiCalendar,
-  FiDollarSign, FiLoader,
+  FiDollarSign, FiSearch, FiX,
 } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import type { AdminSubscription, ApiResponse } from "@/types";
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const PLAN_LABEL: Record<string, string> = {
   FREE:    "Free",
@@ -30,231 +31,311 @@ const PLAN_PRICE: Record<string, string> = {
 
 function PlanBadge({ plan }: { plan: string }) {
   if (plan === "YEARLY")
-    return <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/30 text-xs">{PLAN_LABEL[plan] ?? plan}</Badge>;
+    return <Badge className="bg-purple-500/15 text-purple-500 border-purple-500/30 border text-[10px] px-1.5 py-0 font-medium">{PLAN_LABEL[plan] ?? plan}</Badge>;
   if (plan === "MONTHLY")
-    return <Badge className="bg-green-500/15 text-green-400 border-green-500/30 text-xs">{PLAN_LABEL[plan] ?? plan}</Badge>;
-  return <Badge variant="secondary" className="text-xs">{PLAN_LABEL[plan] ?? plan}</Badge>;
+    return <Badge className="bg-green-500/15 text-green-600 border-green-500/30 border text-[10px] px-1.5 py-0 font-medium">{PLAN_LABEL[plan] ?? plan}</Badge>;
+  return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium">{PLAN_LABEL[plan] ?? plan}</Badge>;
 }
 
-function StatusIcon({ status, cancelAtPeriodEnd }: { status: string; cancelAtPeriodEnd: boolean }) {
+function StatusBadge({ status, cancelAtPeriodEnd }: { status: string; cancelAtPeriodEnd: boolean }) {
   if (cancelAtPeriodEnd)
-    return <FiAlertCircle className="w-3.5 h-3.5 text-amber-400" title="Cancelling" />;
+    return (
+      <div className="flex items-center gap-1.5">
+        <FiAlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+        <span className="text-xs font-medium text-amber-600">Cancelling</span>
+      </div>
+    );
   if (status === "ACTIVE")
-    return <FiCheckCircle className="w-3.5 h-3.5 text-green-400" />;
-  return <FiXCircle className="w-3.5 h-3.5 text-red-400" />;
+    return (
+      <div className="flex items-center gap-1.5">
+        <FiCheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+        <span className="text-xs font-medium text-green-600">Active</span>
+      </div>
+    );
+  return (
+    <div className="flex items-center gap-1.5">
+      <FiXCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+      <span className="text-xs font-medium text-muted-foreground">{status}</span>
+    </div>
+  );
 }
 
-function fmt(dateStr: string | null) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function fmt(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-// ── component ──────────────────────────────────────────────────────────────
+function PaginationBar({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  const pages: (number | "…")[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push("…");
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push("…");
+    pages.push(totalPages);
+  }
+  return (
+    <div className="flex items-center justify-center gap-1 flex-wrap">
+      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>Previous</Button>
+      {pages.map((p, i) =>
+        p === "…"
+          ? <span key={`e-${i}`} className="px-2 text-muted-foreground text-sm">…</span>
+          : <Button key={p} size="sm" variant={p === page ? "default" : "outline"} className="w-9" onClick={() => onChange(p as number)}>{p}</Button>
+      )}
+      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>Next</Button>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+const LIMIT = 20;
 
 export default function AdminSubscriptionsClient() {
-  const [subs,    setSubs]    = useState<AdminSubscription[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [status,  setStatus]  = useState("ACTIVE");
-  const [page,    setPage]    = useState(1);
-  const [total,   setTotal]   = useState(0);
+  const [subs, setSubs]       = useState<AdminSubscription[]>([]);
+  const [total, setTotal]     = useState(0);
+  const [page, setPage]       = useState(1);
 
-  const LIMIT = 20;
+  const [search, setSearch]           = useState("");
+  const [debouncedSearch, setDebounced] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
+  const [planFilter, setPlanFilter]     = useState("ALL");
+
+  // Derived loading pattern — no synchronous setState in effect
+  const requestKey = `${page}|${statusFilter}|${planFilter}|${debouncedSearch}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = requestKey !== loadedKey;
+
+  useEffect(() => {
+    const t = setTimeout(() => { setDebounced(search); setPage(1); }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
-        if (status !== "ALL") params.set("status", status);
-        const res = await api.get<ApiResponse<AdminSubscription[]>>(`/admin/subscriptions?${params}`);
-        if (!cancelled) {
-          setSubs(res.data ?? []);
-          setTotal(res.meta?.total ?? 0);
-        }
-      } catch {
-        if (!cancelled) setSubs([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
+    const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
+    if (statusFilter !== "ALL") params.set("status", statusFilter);
+    if (planFilter   !== "ALL") params.set("plan",   planFilter);
+    if (debouncedSearch)        params.set("search", debouncedSearch);
+
+    api.get<ApiResponse<AdminSubscription[]>>(`/admin/subscriptions?${params}`)
+      .then((res) => {
+        if (cancelled) return;
+        setSubs(res.data ?? []);
+        setTotal(res.meta?.total ?? 0);
+        setLoadedKey(requestKey);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSubs([]);
+        setLoadedKey(requestKey);
+      });
     return () => { cancelled = true; };
-  }, [status, page]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey]);
 
   const totalPages = Math.ceil(total / LIMIT);
+  const startIndex = (page - 1) * LIMIT;
+  const hasFilters = search || statusFilter !== "ACTIVE" || planFilter !== "ALL";
 
-  // Estimated MRR for the current filter
   const mrr = subs.reduce((sum, s) => {
     if (s.plan === "MONTHLY") return sum + 9.99;
     if (s.plan === "YEARLY")  return sum + 79.99 / 12;
     return sum;
   }, 0);
 
+  function clearFilters() {
+    setSearch(""); setStatusFilter("ACTIVE"); setPlanFilter("ALL"); setPage(1);
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Subscriptions</h1>
-          <p className="text-sm text-muted-foreground">
-            {total.toLocaleString()} total · {status === "ACTIVE" ? "showing active" : `filtered by ${status.toLowerCase()}`}
-          </p>
+          <p className="text-sm text-muted-foreground">{total.toLocaleString()} total</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          {/* MRR chip */}
-          {status === "ACTIVE" && (
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-primary bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5">
-              <FiDollarSign className="w-4 h-4" />
-              ${mrr.toFixed(0)} est. MRR
-            </div>
-          )}
-
-          <Select value={status} onValueChange={(v: string | null) => { if (v) { setStatus(v); setPage(1); } }}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Plans</SelectItem>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              <SelectItem value="INACTIVE">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {statusFilter === "ACTIVE" && !loading && subs.length > 0 && (
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-primary bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 w-fit">
+            <FiDollarSign className="w-4 h-4" />
+            ${mrr.toFixed(0)} est. MRR
+          </div>
+        )}
       </div>
 
-      {/* Summary cards (active only) */}
-      {status === "ACTIVE" && subs.length > 0 && (
+      {/* Summary cards — active plan breakdown */}
+      {statusFilter === "ACTIVE" && !loading && subs.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Card className="border-green-500/20 bg-green-500/5">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-center gap-2 mb-1">
-                <MdVerified className="w-4 h-4 text-green-400" />
+                <MdVerified className="w-4 h-4 text-green-500" />
                 <span className="text-xs text-muted-foreground">Monthly Pro</span>
               </div>
-              <p className="text-2xl font-bold">
-                {subs.filter((s) => s.plan === "MONTHLY").length}
-              </p>
-              <p className="text-xs text-green-400 mt-0.5">$9.99/month each</p>
+              <p className="text-2xl font-bold">{subs.filter((s) => s.plan === "MONTHLY").length}</p>
+              <p className="text-xs text-green-600 mt-0.5">$9.99 / month each</p>
             </CardContent>
           </Card>
           <Card className="border-purple-500/20 bg-purple-500/5">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-center gap-2 mb-1">
-                <MdVerified className="w-4 h-4 text-purple-400" />
+                <MdVerified className="w-4 h-4 text-purple-500" />
                 <span className="text-xs text-muted-foreground">Annual Premium</span>
               </div>
-              <p className="text-2xl font-bold">
-                {subs.filter((s) => s.plan === "YEARLY").length}
-              </p>
-              <p className="text-xs text-purple-400 mt-0.5">$79.99/year each</p>
+              <p className="text-2xl font-bold">{subs.filter((s) => s.plan === "YEARLY").length}</p>
+              <p className="text-xs text-purple-600 mt-0.5">$79.99 / year each</p>
             </CardContent>
           </Card>
           <Card className="border-amber-500/20 bg-amber-500/5 col-span-2 sm:col-span-1">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-center gap-2 mb-1">
-                <FiAlertCircle className="w-4 h-4 text-amber-400" />
+                <FiAlertCircle className="w-4 h-4 text-amber-500" />
                 <span className="text-xs text-muted-foreground">Cancelling</span>
               </div>
-              <p className="text-2xl font-bold">
-                {subs.filter((s) => s.cancelAtPeriodEnd).length}
-              </p>
-              <p className="text-xs text-amber-400 mt-0.5">at period end</p>
+              <p className="text-2xl font-bold">{subs.filter((s) => s.cancelAtPeriodEnd).length}</p>
+              <p className="text-xs text-amber-600 mt-0.5">at period end</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Table */}
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-16 bg-card rounded-xl animate-pulse border border-border/50" />
-          ))}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-52">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
         </div>
-      ) : subs.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <FiLoader className="w-8 h-8 mx-auto mb-3 opacity-30" />
-          <p>No subscriptions found.</p>
-        </div>
-      ) : (
-        <Card className="border-border/50">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/40 bg-muted/20">
-                    <th className="text-left text-xs text-muted-foreground font-medium px-5 py-3">User</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Plan</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Status</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3 hidden sm:table-cell">Price</th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3 hidden md:table-cell">
-                      <span className="flex items-center gap-1"><FiCalendar className="w-3 h-3" /> Started</span>
-                    </th>
-                    <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3 pr-5 hidden md:table-cell">
-                      <span className="flex items-center gap-1"><FiCalendar className="w-3 h-3" /> Renews / Ends</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subs.map((sub) => (
-                    <tr key={sub.id} className="border-b border-border/20 last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="w-8 h-8 shrink-0">
-                            <AvatarImage src={sub.user.image ?? undefined} alt={sub.user.name} />
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {sub.user.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{sub.user.name}</p>
-                            <p className="text-xs text-muted-foreground truncate hidden sm:block">{sub.user.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <PlanBadge plan={sub.plan} />
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <StatusIcon status={sub.status} cancelAtPeriodEnd={sub.cancelAtPeriodEnd} />
-                          <span className="text-xs font-medium">
-                            {sub.cancelAtPeriodEnd ? "Cancelling" : sub.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 hidden sm:table-cell">
-                        <span className="text-xs font-semibold text-foreground">
-                          {PLAN_PRICE[sub.plan] ?? "—"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 hidden md:table-cell text-xs text-muted-foreground">
-                        {fmt(sub.currentPeriodStart)}
-                      </td>
-                      <td className="px-3 py-3 pr-5 hidden md:table-cell text-xs text-muted-foreground">
-                        {fmt(sub.currentPeriodEnd)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Previous
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="ALL">All Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+
+        <select
+          value={planFilter}
+          onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="ALL">All Plans</option>
+          <option value="MONTHLY">Monthly Pro</option>
+          <option value="YEARLY">Annual Premium</option>
+          <option value="FREE">Free</option>
+        </select>
+
+        {hasFilters && (
+          <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground hover:text-foreground" onClick={clearFilters}>
+            <FiX className="w-3.5 h-3.5" /> Clear
           </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            Next
-          </Button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-lg border border-border/60 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 border-b border-border/60">
+              <tr>
+                <th className="px-4 py-3 text-left w-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">User</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plan</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden sm:table-cell">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden sm:table-cell">Price</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden md:table-cell">
+                  <span className="flex items-center gap-1"><FiCalendar className="w-3 h-3" /> Started</span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden lg:table-cell">
+                  <span className="flex items-center gap-1"><FiCalendar className="w-3 h-3" /> Renews / Ends</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="bg-background">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-6" /></td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Skeleton className="w-8 h-8 rounded-full shrink-0" /><div className="space-y-1"><Skeleton className="h-4 w-28" /><Skeleton className="h-3 w-36 hidden sm:block" /></div></div></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
+                    <td className="px-4 py-3 hidden sm:table-cell"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-4 py-3 hidden sm:table-cell"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3 hidden lg:table-cell"><Skeleton className="h-4 w-24" /></td>
+                  </tr>
+                ))
+              ) : subs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center">
+                    <FiDollarSign className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">No subscriptions found.</p>
+                  </td>
+                </tr>
+              ) : (
+                subs.map((sub, i) => (
+                  <tr key={sub.id} className="bg-background hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{startIndex + i + 1}</td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={sub.user.image ?? undefined} alt={sub.user.name} />
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {sub.user.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{sub.user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate hidden sm:block">{sub.user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3"><PlanBadge plan={sub.plan} /></td>
+
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <StatusBadge status={sub.status} cancelAtPeriodEnd={sub.cancelAtPeriodEnd} />
+                    </td>
+
+                    <td className="px-4 py-3 hidden sm:table-cell text-xs font-semibold">
+                      {PLAN_PRICE[sub.plan] ?? "—"}
+                    </td>
+
+                    <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">
+                      {fmt(sub.currentPeriodStart)}
+                    </td>
+
+                    <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">
+                      {fmt(sub.currentPeriodEnd)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer */}
+      {!loading && subs.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {startIndex + 1}–{Math.min(startIndex + LIMIT, total)} of {total} subscriptions
+          </p>
+          <PaginationBar page={page} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
     </div>

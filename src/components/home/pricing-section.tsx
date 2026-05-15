@@ -181,7 +181,7 @@ export default function PricingSection() {
 
           {/* Monthly Pro — featured */}
           <Card className="flex flex-col relative border-2 border-primary bg-card shadow-2xl shadow-primary/15 lg:scale-[1.03] z-10">
-            <div className="absolute -top-4 inset-x-0 flex justify-center">
+            <div className="absolute  inset-x-0 flex justify-center">
               <Badge className="bg-primary hover:bg-primary text-primary-foreground font-bold px-4 py-1 uppercase tracking-widest text-[10px] shadow-lg shadow-primary/30">
                 Most Popular
               </Badge>
