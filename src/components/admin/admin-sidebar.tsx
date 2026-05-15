@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FiFilm,
   FiGrid,
   FiUsers,
   FiMessageSquare,
@@ -85,7 +85,7 @@ function SidebarLogo() {
   return (
     <div className="p-5 border-b border-sidebar-border">
       <Link href="/" className="flex items-center gap-2 font-bold text-base">
-        <FiFilm className="text-primary w-5 h-5" />
+        <Image src="/powersync.svg" alt="Logo" width={22} height={22} className="h-auto w-auto shrink-0" />
         <span className="text-gradient">CinePortal</span>
       </Link>
       <p className="text-xs text-muted-foreground mt-0.5">Admin Panel</p>
@@ -125,7 +125,7 @@ export function MobileAdminNav() {
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <div className="p-5">
             <Link href="/" className="flex items-center gap-2 font-bold text-base">
-              <FiFilm className="text-primary w-5 h-5" />
+              <Image src="/powersync.svg" alt="Logo" width={22} height={22} className="h-auto w-auto shrink-0" />
               <span className="text-gradient">CinePortal</span>
             </Link>
             <p className="text-xs text-muted-foreground mt-0.5">Admin Panel</p>
