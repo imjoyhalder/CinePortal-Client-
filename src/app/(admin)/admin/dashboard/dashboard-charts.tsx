@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -14,6 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DashboardStats, ReviewStatus } from "@/types";
+
+// --- Derived Types ---
+
+type RecentReview = DashboardStats["recentReviews"][number];
 
 // --- Typed Configuration & Interfaces ---
 
@@ -54,6 +57,7 @@ const getStatusConfig = (status: ReviewStatus): StatusStyle => {
   };
   return configs[status] || configs.PENDING;
 };
+
 
 const generateLineData = (stats: DashboardStats["stats"]): ChartDataItem[] => {
   const { totalUsers, totalReviews, activeSubscriptions } = stats;
@@ -200,7 +204,7 @@ export function DashboardCharts({ stats }: { stats: DashboardStats }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {stats.recentReviews.map((review) => {
+                {stats.recentReviews.slice(0, 5).map((review: RecentReview) => {
                   const statusStyle = getStatusConfig(review.status);
                   return (
                     <tr key={review.id} className="hover:bg-muted/10 transition-colors">
