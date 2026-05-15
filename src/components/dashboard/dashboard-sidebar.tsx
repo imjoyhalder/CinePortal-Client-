@@ -167,6 +167,7 @@ import {
   FiMessageSquare,
   FiBookmark,
   FiCreditCard,
+  FiShoppingBag,
   FiLogOut,
   FiChevronLeft,
   FiMenu,
@@ -186,10 +187,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", icon: FiGrid, label: "Overview" },
-  { href: "/dashboard/reviews", icon: FiMessageSquare, label: "My Reviews" },
-  { href: "/dashboard/watchlist", icon: FiBookmark, label: "Watchlist" },
-  { href: "/dashboard/subscription", icon: FiCreditCard, label: "Subscription" },
+  { href: "/dashboard",              icon: FiGrid,         label: "Overview"     },
+  { href: "/dashboard/reviews",      icon: FiMessageSquare, label: "My Reviews"  },
+  { href: "/dashboard/watchlist",    icon: FiBookmark,     label: "Watchlist"    },
+  { href: "/dashboard/purchases",    icon: FiShoppingBag,  label: "Purchases"    },
+  { href: "/dashboard/subscription", icon: FiCreditCard,   label: "Subscription" },
 ] as const;
 
 // --- Sub-components ---

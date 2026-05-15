@@ -129,7 +129,14 @@ export interface DashboardStats {
     yearlySubscriptions: number;
     estimatedMRR: number;
     estimatedARR: number;
+    newUsers: number;
+    newReviews: number;
+    newSubscriptions: number;
+    prevUsers: number;
+    prevReviews: number;
+    prevSubscriptions: number;
   };
+  chartData: { date: string; users: number; reviews: number; subscriptions: number }[];
   recentReviews: (Review & { user: { id: string; name: string; email: string; image: string | null }; media: { id: string; title: string; posterUrl: string | null } | null })[];
   topRatedMedia: (Media & { averageRating: number })[];
 }

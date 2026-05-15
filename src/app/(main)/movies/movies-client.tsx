@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiSearch, FiX, FiChevronDown, FiFilter, FiFilm } from "react-icons/fi";
+import { FiSearch, FiX, FiChevronDown, FiFilter, FiFilm, FiStar } from "react-icons/fi";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ interface Filters {
   platform: string;
   pricing: string;
   sortBy: string;
+  minRating: string;
 }
 
 interface MoviesClientProps {
@@ -42,18 +43,26 @@ const SORT_OPTIONS = [
   { value: "mostReviewed", label: "Most Reviewed" },
   { value: "topRated",     label: "Top Rated"     },
 ];
+const RATING_OPTIONS = [
+  { value: "",  label: "Any"    },
+  { value: "2", label: "2★ +"   },
+  { value: "3", label: "3★ +"   },
+  { value: "4", label: "4★ +"   },
+  { value: "5", label: "5★ only" },
+];
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 function buildQuery(f: Filters, page: number): string {
   const p = new URLSearchParams();
-  if (f.search)   p.set("search",            f.search);
-  if (f.type)     p.set("type",              f.type);
-  if (f.genre)    p.set("genre",             f.genre);
-  if (f.platform) p.set("streamingPlatform", f.platform);
-  if (f.pricing)  p.set("pricing",           f.pricing);
-  if (f.sortBy)   p.set("sortBy",            f.sortBy);
-  if (page > 1)   p.set("page",              String(page));
+  if (f.search)    p.set("search",            f.search);
+  if (f.type)      p.set("type",              f.type);
+  if (f.genre)     p.set("genre",             f.genre);
+  if (f.platform)  p.set("streamingPlatform", f.platform);
+  if (f.pricing)   p.set("pricing",           f.pricing);
+  if (f.sortBy)    p.set("sortBy",            f.sortBy);
+  if (f.minRating) p.set("minRating",         f.minRating);
+  if (page > 1)    p.set("page",              String(page));
   return p.toString();
 }
 
@@ -108,7 +117,7 @@ export default function MoviesClient({
   }
 
   const activeFilterCount = [
-    filters.type, filters.genre, filters.platform, filters.pricing, filters.sortBy,
+    filters.type, filters.genre, filters.platform, filters.pricing, filters.sortBy, filters.minRating,
   ].filter(Boolean).length;
 
   const filterBtn = (active: boolean) =>
@@ -187,7 +196,7 @@ export default function MoviesClient({
         {filtersOpen && (
           <div className="rounded-xl border border-border/60 bg-card p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150">
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
               <fieldset>
                 <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Type</legend>
@@ -224,6 +233,23 @@ export default function MoviesClient({
                 <div className="flex flex-wrap gap-2">
                   {SORT_OPTIONS.map(({ value, label }) => (
                     <button key={value} onClick={() => applyFilter({ sortBy: value })} className={filterBtn(filters.sortBy === value)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <FiStar className="w-3 h-3" /> Min Rating
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {RATING_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => applyFilter({ minRating: filters.minRating === value ? "" : value })}
+                      className={filterBtn(filters.minRating === value && value !== "")}
+                    >
                       {label}
                     </button>
                   ))}
@@ -285,6 +311,12 @@ export default function MoviesClient({
             {filters.sortBy && (
               <Badge variant="secondary" className="gap-1.5 pr-1.5 text-xs cursor-pointer hover:bg-destructive/15 hover:text-destructive" onClick={() => applyFilter({ sortBy: "" })}>
                 {SORT_OPTIONS.find((s) => s.value === filters.sortBy)?.label} <FiX className="w-3 h-3" />
+              </Badge>
+            )}
+            {filters.minRating && (
+              <Badge variant="secondary" className="gap-1.5 pr-1.5 text-xs cursor-pointer hover:bg-destructive/15 hover:text-destructive" onClick={() => applyFilter({ minRating: "" })}>
+                <FiStar className="w-3 h-3 fill-amber-400 text-amber-400" />
+                {RATING_OPTIONS.find((r) => r.value === filters.minRating)?.label} <FiX className="w-3 h-3" />
               </Badge>
             )}
           </div>

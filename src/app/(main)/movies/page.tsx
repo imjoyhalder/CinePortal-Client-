@@ -26,12 +26,13 @@ async function getMovies(
   if (sp.streamingPlatform) params.set("streamingPlatform", sp.streamingPlatform);
   if (sp.pricing)           params.set("pricing",           sp.pricing);
   if (sp.sortBy)            params.set("sortBy",            sp.sortBy);
+  if (sp.minRating)         params.set("minRating",         sp.minRating);
   params.set("page",  sp.page ?? "1");
   params.set("limit", String(LIMIT));
 
   try {
     const res = await fetch(`${API_URL}/api/movies?${params}`, {
-      cache: "no-store", // always fresh — fully dynamic
+      cache: "no-store",
     });
     if (!res.ok) throw new Error("fetch failed");
     const json: ApiResponse<Media[]> = await res.json();
@@ -64,12 +65,13 @@ export default async function MoviesPage({ searchParams }: PageProps) {
       totalPages={meta.totalPages}
       currentPage={Number(sp.page ?? "1")}
       filters={{
-        search:   sp.search            ?? "",
-        type:     sp.type              ?? "",
-        genre:    sp.genre             ?? "",
-        platform: sp.streamingPlatform ?? "",
-        pricing:  sp.pricing           ?? "",
-        sortBy:   sp.sortBy            ?? "",
+        search:    sp.search            ?? "",
+        type:      sp.type              ?? "",
+        genre:     sp.genre             ?? "",
+        platform:  sp.streamingPlatform ?? "",
+        pricing:   sp.pricing           ?? "",
+        sortBy:    sp.sortBy            ?? "",
+        minRating: sp.minRating         ?? "",
       }}
     />
   );
