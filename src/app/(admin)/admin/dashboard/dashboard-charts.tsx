@@ -40,9 +40,9 @@ export function SegmentPieChart({ stats }: { stats: DashboardStats }) {
   const pieData = useMemo<PieDataItem[]>(() => {
     const freeCount = Math.max(0, totalUsers - activeSubscriptions);
     return [
-      { name: "Monthly Pro",   value: monthlySubscriptions, color: "#22c55e" },
-      { name: "Annual Elite",  value: yearlySubscriptions,  color: "#a855f7" },
-      { name: "Free Tier",     value: freeCount,            color: "#64748b" },
+      { name: "Monthly Pro",   value: monthlySubscriptions, color: "#4ade80" },
+      { name: "Annual Elite",  value: yearlySubscriptions,  color: "#c084fc" },
+      { name: "Free Tier",     value: freeCount,            color: "#94a3b8" },
     ].filter((d) => d.value > 0);
   }, [totalUsers, activeSubscriptions, monthlySubscriptions, yearlySubscriptions]);
 

@@ -180,7 +180,7 @@ export default function FAQClient() {
                     <h2 className="text-lg font-bold tracking-tight">{category}</h2>
                   </div>
 
-                  <Accordion type="single" collapsible={true} className="w-full space-y-3">
+                  <Accordion className="w-full space-y-3">
                     {items.map(({ id, q, a }) => (
                       <AccordionItem
                         key={id}

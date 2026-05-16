@@ -97,7 +97,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex w-60 shrink-0 min-h-screen bg-sidebar border-r border-sidebar-border flex-col">
+    <aside className="hidden md:flex w-60 shrink-0 h-full bg-sidebar border-r border-sidebar-border flex-col overflow-y-auto">
       <SidebarLogo />
       <NavLinks pathname={pathname} />
       <SidebarFooter />

@@ -29,6 +29,9 @@ import { SegmentPieChart } from "./dashboard-charts";
 
 type Period = "today" | "7days" | "30days";
 
+// Module-level cache — survives component unmount/remount across navigations
+const statsCache = new Map<Period, DashboardStats>();
+
 const PERIODS: { value: Period; label: string }[] = [
   { value: "today",  label: "Today"   },
   { value: "7days",  label: "7 Days"  },
@@ -36,9 +39,9 @@ const PERIODS: { value: Period; label: string }[] = [
 ];
 
 const CHART_CONFIG: ChartConfig = {
-  users:         { label: "New Users",         color: "#3b82f6" },
-  reviews:       { label: "New Reviews",        color: "#22c55e" },
-  subscriptions: { label: "New Subscriptions",  color: "#a855f7" },
+  users:         { label: "New Users",         color: "#60a5fa" },
+  reviews:       { label: "New Reviews",        color: "#4ade80" },
+  subscriptions: { label: "New Subscriptions",  color: "#c084fc" },
 };
 
 const STATUS_STYLE: Record<ReviewStatus, { color: string; label: string }> = {
@@ -134,26 +137,32 @@ function DashboardSkeleton() {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AdminDashboardClient() {
-  const [stats,        setStats]        = useState<DashboardStats | null>(null);
-  const [loadedPeriod, setLoadedPeriod] = useState<Period | null>(null);
-  const [period,       setPeriod]       = useState<Period>("30days");
+  const [fetchedStats,  setFetchedStats]  = useState<DashboardStats | null>(null);
+  const [fetchedPeriod, setFetchedPeriod] = useState<Period | null>(null);
+  const [period,        setPeriod]        = useState<Period>("30days");
 
-  // loading is derived — no synchronous setState inside the effect
-  const loading = period !== loadedPeriod;
+  // Prefer cache, fall back to last fetched state for this period
+  const stats = statsCache.get(period) ?? (fetchedPeriod === period ? fetchedStats : null);
+  const loading = stats === null;
 
   useEffect(() => {
+    if (statsCache.has(period)) return; // already cached — no fetch needed
+
     let cancelled = false;
 
     api.get<ApiResponse<DashboardStats>>(`/admin/dashboard?period=${period}`)
       .then((res) => {
         if (cancelled) return;
-        if (res.data) setStats(res.data);
-        setLoadedPeriod(period);
+        if (res.data) {
+          statsCache.set(period, res.data);
+          setFetchedStats(res.data);
+        }
+        setFetchedPeriod(period);
       })
       .catch(() => {
         if (cancelled) return;
         toast.error("Failed to load dashboard data.");
-        setLoadedPeriod(period); // stop spinner even on error
+        setFetchedPeriod(period);
       });
 
     return () => { cancelled = true; };
@@ -263,42 +272,69 @@ export default function AdminDashboardClient() {
         </CardHeader>
         <CardContent className="pt-6 px-2 pb-4">
           <ChartContainer config={CHART_CONFIG} className="h-75 w-full">
-            <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <AreaChart data={stats.chartData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillUsers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--color-users)"         stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="var(--color-users)"         stopOpacity={0.02} />
+                  <stop offset="0%"   stopColor="var(--color-users)"         stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--color-users)"         stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="fillReviews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--color-reviews)"       stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="var(--color-reviews)"       stopOpacity={0.02} />
+                  <stop offset="0%"   stopColor="var(--color-reviews)"       stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--color-reviews)"       stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="fillSubscriptions" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--color-subscriptions)" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="var(--color-subscriptions)" stopOpacity={0.02} />
+                  <stop offset="0%"   stopColor="var(--color-subscriptions)" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--color-subscriptions)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid vertical={false} stroke="hsl(var(--border))" opacity={0.4} strokeDasharray="3 3" />
+              <CartesianGrid vertical={false} stroke="#334155" opacity={0.6} strokeDasharray="4 4" />
               <XAxis
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                tickMargin={8}
+                tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+                tickMargin={10}
                 interval="preserveStartEnd"
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
                 allowDecimals={false}
                 width={30}
               />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+              <ChartTooltip
+                cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1, strokeDasharray: "3 3" }}
+                content={<ChartTooltipContent indicator="line" />}
+              />
               <ChartLegend content={<ChartLegendContent />} />
-              <Area dataKey="users"         type="monotone" stroke="var(--color-users)"         fill="url(#fillUsers)"         strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              <Area dataKey="reviews"       type="monotone" stroke="var(--color-reviews)"       fill="url(#fillReviews)"       strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              <Area dataKey="subscriptions" type="monotone" stroke="var(--color-subscriptions)" fill="url(#fillSubscriptions)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              <Area
+                dataKey="subscriptions"
+                type="monotone"
+                stroke="var(--color-subscriptions)"
+                fill="url(#fillSubscriptions)"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--color-subscriptions)", fill: "hsl(var(--background))" }}
+              />
+              <Area
+                dataKey="users"
+                type="monotone"
+                stroke="var(--color-users)"
+                fill="url(#fillUsers)"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--color-users)", fill: "hsl(var(--background))" }}
+              />
+              <Area
+                dataKey="reviews"
+                type="monotone"
+                stroke="var(--color-reviews)"
+                fill="url(#fillReviews)"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--color-reviews)", fill: "hsl(var(--background))" }}
+              />
             </AreaChart>
           </ChartContainer>
         </CardContent>

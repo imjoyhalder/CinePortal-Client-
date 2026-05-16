@@ -171,7 +171,7 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger className="group flex items-center gap-2 outline-none">
                   <Avatar className="h-9 w-9 border-2 border-transparent group-hover:border-primary/20 transition-all">
-                    <AvatarImage src={user.image ?? undefined} />
+                    <AvatarImage src={user.image ?? undefined} alt={user.name ?? "User"} referrerPolicy="no-referrer" />
                     <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                       {user.name?.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

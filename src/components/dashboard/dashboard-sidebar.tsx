@@ -300,7 +300,7 @@ const SidebarUser = () => {
 
 export default function DashboardSidebar() {
   return (
-    <aside className="hidden md:flex w-64 shrink-0 h-screen sticky top-0 bg-sidebar border-r border-sidebar-border flex-col overflow-hidden">
+    <aside className="hidden md:flex w-64 shrink-0 h-full bg-sidebar border-r border-sidebar-border flex-col overflow-hidden">
       {/* <SidebarLogo /> */}
       <div className="flex-1 overflow-y-auto">
         <NavLinks />

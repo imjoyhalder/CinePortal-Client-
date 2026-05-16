@@ -45,7 +45,7 @@ export default function ReviewFormWrapper({ mediaId, pricing }: ReviewFormWrappe
     );
   }
 
-  const isAdmin = session.user.role === "ADMIN";
+  const isAdmin = (session.user as { role?: string }).role === "ADMIN";
   const hasPaidPlan =
     isAdmin ||
     (subscription?.status === "ACTIVE" && subscription.plan !== "FREE");
