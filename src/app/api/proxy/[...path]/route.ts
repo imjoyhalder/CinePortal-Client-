@@ -17,8 +17,16 @@ async function handler(
   const contentType = req.headers.get('content-type');
   if (contentType) headers.set('content-type', contentType);
 
-  const token = req.cookies.get('auth_token')?.value;
-  if (token) headers.set('authorization', `Bearer ${token}`);
+  // Prefer the Authorization header sent by the client (api.ts includes it).
+  // Fall back to the auth_token cookie set by SessionSync for requests that
+  // bypass api.ts (e.g. direct fetch calls without explicit token).
+  const incomingAuth = req.headers.get('authorization');
+  const cookieToken = req.cookies.get('auth_token')?.value;
+  if (incomingAuth) {
+    headers.set('authorization', incomingAuth);
+  } else if (cookieToken) {
+    headers.set('authorization', `Bearer ${cookieToken}`);
+  }
 
   const body =
     req.method !== 'GET' && req.method !== 'HEAD' ? await req.text() : undefined;
