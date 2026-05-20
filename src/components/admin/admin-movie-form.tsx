@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
+import { api, getBearerToken } from "@/lib/api";
 import { toast } from "sonner";
 import type { Media } from "@/types";
 
@@ -119,7 +119,13 @@ export default function AdminMovieForm({ movie, onSuccess, onCancel }: Props) {
     try {
       const formData = new FormData();
       formData.append("image", file);
-      const res  = await fetch("/api/proxy/upload/image", { method: "POST", body: formData, credentials: "include" });
+      const token = await getBearerToken();
+      const res = await fetch("/api/proxy/upload/image", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        headers: token ? { authorization: `Bearer ${token}` } : undefined,
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message ?? "Upload failed");
       setValue("posterUrl", json.data.url, { shouldValidate: true });

@@ -23,7 +23,7 @@ function getApiBase(): string {
  * 2. Falls back to getSession() to handle the race where the page loads before
  *    SessionSync has had a chance to write the cookie.
  */
-async function getBearerToken(): Promise<string | undefined> {
+export async function getBearerToken(): Promise<string | undefined> {
   // Fast path: cookie already set by SessionSync
   const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
   if (match?.[1]) return match[1];
