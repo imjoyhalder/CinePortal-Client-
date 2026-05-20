@@ -234,6 +234,17 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="fixed inset-x-0 top-0 bottom-0 z-40 bg-background md:hidden overflow-y-auto pt-16.25">
           <div className="p-6 flex flex-col gap-4">
+
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5 mb-2" onClick={() => setMobileOpen(false)}>
+              <div className="relative h-9 w-9 overflow-hidden flex items-center justify-center">
+                <Image alt="Logo" src="/powersync.svg" width={28} height={28} className="h-auto w-auto" priority />
+              </div>
+              <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
+                CinePortal
+              </span>
+            </Link>
+
             <form onSubmit={handleSearch} className="relative mb-4">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input

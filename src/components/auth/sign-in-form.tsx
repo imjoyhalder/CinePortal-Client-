@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { signIn } from "@/lib/auth-client";
+import { signIn, authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -45,7 +45,34 @@ export default function SignInForm() {
             router.push("/");
             router.refresh();
           },
-          onError: (ctx) => { toast.error(ctx.error.message || "Sign in failed"); return; },
+          onError: async (ctx) => {
+            const msg = ctx.error.message ?? "";
+            const isUnverified =
+              ctx.error.code === "EMAIL_NOT_VERIFIED" ||
+              msg.toLowerCase().includes("not verified") ||
+              msg.toLowerCase().includes("email verification");
+
+            if (isUnverified) {
+              try {
+                await authClient.emailOtp.sendVerificationOtp({
+                  email: values.email,
+                  type: "email-verification",
+                });
+                toast.info(
+                  "Your email is not verified. We sent a new code — check your inbox.",
+                  { duration: 5000 }
+                );
+                router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+              } catch {
+                toast.error(
+                  "Your email is not verified. Please check your inbox or sign up again."
+                );
+              }
+              return;
+            }
+
+            toast.error(msg || "Sign in failed");
+          },
         }
       );
     } finally {

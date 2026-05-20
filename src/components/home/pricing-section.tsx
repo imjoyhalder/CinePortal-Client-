@@ -124,9 +124,6 @@ export default function PricingSection() {
 
         {/* ── Header ──────────────────────────────────────────────────────────── */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 rounded-full px-4 py-1.5 text-sm text-primary font-medium mb-5">
-            <FiZap className="w-3.5 h-3.5" /> Simple, Transparent Pricing
-          </div>
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
             Choose the plan that <span className="text-primary">fits you</span>
           </h2>

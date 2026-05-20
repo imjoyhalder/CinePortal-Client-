@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   FiCheck, FiEyeOff, FiTrash2, FiMessageSquare, FiShield,
+  FiChevronLeft, FiChevronRight,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +26,19 @@ const STATUS_STYLE: Record<string, string> = {
   UNPUBLISHED: "border-red-500/30    text-red-400    bg-red-500/5",
 };
 
+const PAGE_SIZE = 6;
+
 export default function MovieReviewList({ initialReviews }: MovieReviewListProps) {
   const { data: session } = useSession();
   const [reviews, setReviews]               = useState(initialReviews);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId]           = useState<string | null>(null);
+  const [page, setPage]                       = useState(1);
 
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+
+  const totalPages  = Math.max(1, Math.ceil(reviews.length / PAGE_SIZE));
+  const pagedReviews = reviews.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   async function moderate(reviewId: string, status: "APPROVED" | "UNPUBLISHED") {
     try {
@@ -85,7 +92,7 @@ export default function MovieReviewList({ initialReviews }: MovieReviewListProps
 
       {/* Review grid */}
       <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {reviews.map((review) => (
+        {pagedReviews.map((review) => (
           <div key={review.id} className="flex flex-col gap-2">
 
             {/* The review card itself */}
@@ -144,6 +151,31 @@ export default function MovieReviewList({ initialReviews }: MovieReviewListProps
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium border border-border/50 text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <FiChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+
+          <span className="text-xs font-semibold text-muted-foreground px-2">
+            {page} / {totalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium border border-border/50 text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Next <FiChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Admin delete confirmation dialog */}
       <ConfirmDialog

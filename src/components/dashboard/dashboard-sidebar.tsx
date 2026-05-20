@@ -160,9 +160,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  FiFilm,
   FiGrid,
   FiMessageSquare,
   FiBookmark,
@@ -198,14 +198,16 @@ const NAV_ITEMS = [
 
 const SidebarLogo = () => (
   <div className="flex flex-col px-6 py-6 border-b border-sidebar-border bg-sidebar/50 backdrop-blur-sm">
-    <Link 
-      href="/" 
+    <Link
+      href="/"
       className="flex items-center gap-2.5 font-bold text-xl hover:opacity-80 transition-opacity"
     >
-      <div className="bg-primary p-1.5 rounded-lg shadow-sm">
-        <FiFilm className="text-primary-foreground w-5 h-5" />
+      <div className="relative h-9 w-9 overflow-hidden flex items-center justify-center">
+        <Image alt="Logo" src="/powersync.svg" width={28} height={28} className="h-auto w-auto" priority />
       </div>
-      <span className="tracking-tight text-foreground">CinePortal</span>
+      <span className="tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
+        CinePortal
+      </span>
     </Link>
   </div>
 );
@@ -301,7 +303,7 @@ const SidebarUser = () => {
 export default function DashboardSidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 h-full bg-sidebar border-r border-sidebar-border flex-col overflow-hidden">
-      {/* <SidebarLogo /> */}
+      <SidebarLogo />
       <div className="flex-1 overflow-y-auto">
         <NavLinks />
       </div>
